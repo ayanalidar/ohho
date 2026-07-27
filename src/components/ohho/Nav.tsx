@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Menu, ShoppingBag, X, Plus, Minus, Trash2 } from "lucide-react";
+import { Menu, ShoppingBag, X, Plus, Minus, Trash2, User, LogOut, LayoutDashboard, ShieldCheck, ChevronDown } from "lucide-react";
 import { useCart, cartCount, cartSubtotal } from "@/store/cart";
+import { useAuth } from "@/components/ohho/AuthProvider";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -13,13 +14,23 @@ const NAV_LINKS = [
   { href: "#tour", label: "3D Tour" },
   { href: "#order", label: "Order Online" },
   { href: "#track", label: "Track" },
-  { href: "#audio", label: "Audio Guide" },
+  { href: "#rewards", label: "Rewards" },
 ];
 
-export function Nav() {
+export function Nav({
+  onOpenAuth,
+  onOpenUserDash,
+  onOpenAdmin,
+}: {
+  onOpenAuth: (mode: "login" | "signup") => void;
+  onOpenUserDash: () => void;
+  onOpenAdmin: () => void;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { lines, isOpen, open, close, setQty, remove } = useCart();
+  const { user, signOut } = useAuth();
   const count = cartCount(lines);
   const subtotal = cartSubtotal(lines);
 
@@ -71,6 +82,7 @@ export function Nav() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Cart */}
             <button
               onClick={open}
               aria-label="Open cart"
@@ -83,6 +95,75 @@ export function Nav() {
                 </span>
               )}
             </button>
+
+            {/* Auth area */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="h-10 inline-flex items-center gap-1.5 pl-1.5 pr-2.5 rounded-md bg-ohho-gold/10 border border-ohho-gold/30 text-ohho-cream hover:bg-ohho-gold/20"
+                >
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-ohho-orange to-ohho-red grid place-items-center text-ohho-black font-bold text-sm">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <ChevronDown className={cn("h-3.5 w-3.5 text-ohho-cream-dim transition-transform", userMenuOpen && "rotate-180")} />
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                    <div className="absolute right-0 top-12 z-50 w-64 rounded-xl glass-card p-2 shadow-2xl">
+                      <div className="p-3 border-b border-ohho-gold/10">
+                        <div className="font-display text-ohho-cream">{user.name}</div>
+                        <div className="text-[11px] text-ohho-cream-dim truncate">{user.email}</div>
+                        <div className="mt-2 text-[11px] text-ohho-gold font-semibold">
+                          {user.loyaltyPoints} loyalty pts
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          onOpenUserDash();
+                        }}
+                        className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream hover:bg-ohho-orange/10 text-left"
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-ohho-orange" />
+                        My Orders &amp; Invoices
+                      </button>
+                      {user.role === "ADMIN" && (
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            onOpenAdmin();
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream hover:bg-ohho-red/10 text-left"
+                        >
+                          <ShieldCheck className="h-4 w-4 text-ohho-red" />
+                          Admin Panel
+                        </button>
+                      )}
+                      <button
+                        onClick={async () => {
+                          setUserMenuOpen(false);
+                          await signOut();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream-dim hover:bg-ohho-cream/5 text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => onOpenAuth("login")}
+                className="hidden sm:inline-flex h-10 items-center gap-1.5 px-3 rounded-md bg-ohho-black/40 backdrop-blur border border-ohho-gold/30 text-ohho-cream font-semibold text-sm hover:bg-ohho-gold/10"
+              >
+                <User className="h-4 w-4" />
+                Sign in
+              </button>
+            )}
 
             <a
               href="#order"
@@ -114,6 +195,17 @@ export function Nav() {
                 {l.label}
               </a>
             ))}
+            {!user && (
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  onOpenAuth("login");
+                }}
+                className="block w-full mt-2 px-4 py-3 rounded-md bg-ohho-gold/15 text-ohho-gold font-semibold text-left"
+              >
+                Sign in / Create account
+              </button>
+            )}
             <a
               href="#order"
               onClick={() => setMobileOpen(false)}
@@ -133,7 +225,6 @@ export function Nav() {
         )}
         aria-hidden={!isOpen}
       >
-        {/* overlay */}
         <div
           className={cn(
             "absolute inset-0 bg-ohho-black/70 backdrop-blur-sm transition-opacity duration-300",
@@ -141,7 +232,6 @@ export function Nav() {
           )}
           onClick={close}
         />
-        {/* panel */}
         <aside
           className={cn(
             "absolute right-0 top-0 h-full w-full max-w-md bg-ohho-black-light border-l border-ohho-gold/20 shadow-2xl flex flex-col transition-transform duration-300",
@@ -168,7 +258,7 @@ export function Nav() {
                 <div className="text-5xl mb-4">🍔</div>
                 <div className="font-display text-xl text-ohho-cream mb-1">Cart is empty</div>
                 <div className="text-sm text-ohho-cream-dim">
-                  Add a Chicken Cheese Burst Burger to get started.
+                  Add a Crispy Chicken Burger to get started.
                 </div>
               </div>
             )}

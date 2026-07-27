@@ -13,9 +13,16 @@ import {
   Wallet,
   Banknote,
   Sparkles,
+  Loader2,
+  X,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowRight,
 } from "lucide-react";
-import { menuItems, categories } from "@/data/menu";
+import { menuItems, categories, type MenuItem } from "@/data/menu";
 import { useCart, cartSubtotal, cartCount } from "@/store/cart";
+import { useAuth } from "@/components/ohho/AuthProvider";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = [
@@ -24,13 +31,20 @@ const PAYMENT_METHODS = [
   { id: "cod", label: "Cash on Delivery", icon: Banknote },
 ];
 
-export function OrderingPlatform() {
+type Placed = { orderId: string; invoiceNumber: string; earnedPoints: number };
+
+export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void }) {
   const [cat, setCat] = useState<string>("Burgers");
-  const [placed, setPlaced] = useState<{ orderId: string } | null>(null);
+  const [placed, setPlaced] = useState<Placed | null>(null);
   const [pay, setPay] = useState("upi");
   const [mode, setMode] = useState<"delivery" | "pickup">("delivery");
+  const [address, setAddress] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [addOnModal, setAddOnModal] = useState<MenuItem | null>(null);
+  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, string[]>>({});
 
   const { lines, add, setQty, remove, clear } = useCart();
+  const { user } = useAuth();
   const subtotal = cartSubtotal(lines);
   const count = cartCount(lines);
   const deliveryFee = mode === "delivery" && subtotal > 0 ? (subtotal > 400 ? 0 : 39) : 0;
@@ -38,19 +52,71 @@ export function OrderingPlatform() {
   const total = subtotal + deliveryFee + taxes;
 
   const items = useMemo(
-    () => menuItems.filter((m) => m.category === cat),
+    () => menuItems.filter((m) => m.category === cat && !m.isAddOn),
     [cat]
   );
+  const addOns = useMemo(() => menuItems.filter((m) => m.isAddOn), []);
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (lines.length === 0) return;
-    const orderId =
-      "OHHO-" +
-      Math.random().toString(36).slice(2, 7).toUpperCase() +
-      "-" +
-      Date.now().toString(36).slice(-4).toUpperCase();
-    setPlaced({ orderId });
-    clear();
+    if (!user) {
+      onRequireAuth();
+      return;
+    }
+    if (mode === "delivery" && !address.trim()) {
+      return;
+    }
+    setPlacing(true);
+    try {
+      const payload = {
+        items: lines.map((l) => ({
+          itemId: l.item.id,
+          name: l.item.name,
+          emoji: l.item.emoji,
+          image: l.item.image,
+          price: l.item.price,
+          qty: l.qty,
+          addOns: selectedAddOns[l.item.id] || [],
+        })),
+        subtotal,
+        deliveryFee,
+        taxes,
+        total,
+        mode,
+        address: mode === "delivery" ? address : null,
+        paymentMethod: pay,
+        notes: null,
+      };
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to place order");
+      setPlaced({
+        orderId: data.order.orderId,
+        invoiceNumber: data.order.invoiceNumber || "—",
+        earnedPoints: data.earnedPoints || 0,
+      });
+      clear();
+    } catch (e: any) {
+      alert(e?.message || "Failed to place order");
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  const toggleAddOn = (itemId: string, addOnId: string) => {
+    setSelectedAddOns((s) => {
+      const cur = s[itemId] || [];
+      return {
+        ...s,
+        [itemId]: cur.includes(addOnId)
+          ? cur.filter((x) => x !== addOnId)
+          : [...cur, addOnId],
+      };
+    });
   };
 
   return (
@@ -71,11 +137,23 @@ export function OrderingPlatform() {
             Build your order, <span className="text-gradient-ohho">check out.</span>
           </h2>
           <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
-            Pick a category, add to cart, choose delivery or pickup, pay your
-            way. Once placed, your order goes live in the delivery tracker below
-            — watch it move, in real time.
+            Pick a category, add to cart, customize with add-ons, choose delivery
+            or pickup, pay your way. Orders save to your account — track them
+            live and download invoices from your dashboard.
           </p>
         </div>
+
+        {/* Auth hint */}
+        {!user && (
+          <div className="mt-6 p-3 rounded-xl bg-ohho-gold/8 border border-ohho-gold/25 text-sm text-ohho-cream/80 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-ohho-gold flex-shrink-0" />
+            <span>
+              <strong className="text-ohho-gold">Sign in</strong> to place orders,
+              track them live, and earn loyalty points. Demo:{" "}
+              <code className="text-ohho-cream">demo@ohhofoods.com</code> / <code className="text-ohho-cream">demo123</code>
+            </span>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {placed ? (
@@ -95,14 +173,25 @@ export function OrderingPlatform() {
               </h3>
               <p className="mt-3 text-ohho-cream/75">
                 Your OHHO BURGERS order is now in the kitchen. Track it in
-                real-time — from grill to your door.
+                real-time — from grill to your door. We&apos;ve also added{" "}
+                <strong className="text-ohho-gold">{placed.earnedPoints} loyalty points</strong> to your account.
               </p>
-              <div className="mt-6 inline-flex flex-col items-center px-6 py-3 rounded-xl bg-ohho-black/60 border border-ohho-gold/25">
-                <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-cream-dim">
-                  Order ID
+              <div className="mt-6 grid grid-cols-2 gap-3 max-w-md mx-auto">
+                <div className="px-4 py-3 rounded-xl bg-ohho-black/60 border border-ohho-gold/25">
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-cream-dim">
+                    Order ID
+                  </div>
+                  <div className="font-display text-lg text-ohho-gold tracking-wider mt-1 break-all">
+                    {placed.orderId}
+                  </div>
                 </div>
-                <div className="font-display text-2xl text-ohho-gold tracking-wider mt-1">
-                  {placed.orderId}
+                <div className="px-4 py-3 rounded-xl bg-ohho-black/60 border border-ohho-gold/25">
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-cream-dim">
+                    Invoice #
+                  </div>
+                  <div className="font-display text-lg text-ohho-gold tracking-wider mt-1">
+                    {placed.invoiceNumber}
+                  </div>
                 </div>
               </div>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -134,7 +223,7 @@ export function OrderingPlatform() {
               <div className="lg:col-span-8">
                 {/* Category tabs */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {categories.map((c) => (
+                  {categories.filter(c => c.id !== "Add-ons").map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setCat(c.id)}
@@ -155,6 +244,7 @@ export function OrderingPlatform() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   {items.map((item) => {
                     const inCart = lines.find((l) => l.item.id === item.id);
+                    const itemAddOns = selectedAddOns[item.id] || [];
                     return (
                       <div
                         key={item.id}
@@ -182,59 +272,110 @@ export function OrderingPlatform() {
                               {item.prepTime}
                             </span>
                             <span>{item.kcal} kcal</span>
-                            <span className="inline-flex items-center gap-0.5">
-                              {Array.from({ length: 3 }).map((_, s) => (
-                                <Flame
-                                  key={s}
-                                  className={cn(
-                                    "h-2.5 w-2.5",
-                                    s < item.spice
-                                      ? "text-ohho-red fill-ohho-red/50"
-                                      : "text-ohho-cream/15"
-                                  )}
-                                />
-                              ))}
-                            </span>
+                            {item.spice > 0 && (
+                              <span className="inline-flex items-center gap-0.5">
+                                {Array.from({ length: 3 }).map((_, s) => (
+                                  <Flame
+                                    key={s}
+                                    className={cn(
+                                      "h-2.5 w-2.5",
+                                      s < item.spice
+                                        ? "text-ohho-red fill-ohho-red/50"
+                                        : "text-ohho-cream/15"
+                                    )}
+                                  />
+                                ))}
+                              </span>
+                            )}
                           </div>
                           <p className="mt-1 text-xs text-ohho-cream/65 line-clamp-2">
                             {item.description}
                           </p>
 
-                          <div className="mt-auto pt-2">
+                          {itemAddOns.length > 0 && (
+                            <div className="mt-1 text-[10px] text-ohho-gold">
+                              +{itemAddOns.length} add-on{itemAddOns.length !== 1 ? "s" : ""} selected
+                            </div>
+                          )}
+
+                          <div className="mt-auto pt-2 flex items-center gap-2">
                             {inCart ? (
-                              <div className="flex items-center gap-2">
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setQty(item.id, inCart.qty - 1)}
+                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="text-sm text-ohho-cream w-6 text-center font-semibold">
+                                    {inCart.qty}
+                                  </span>
+                                  <button
+                                    onClick={() => setQty(item.id, inCart.qty + 1)}
+                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                                 <button
-                                  onClick={() => setQty(item.id, inCart.qty - 1)}
-                                  className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+                                  onClick={() => setAddOnModal(item)}
+                                  className="ml-auto text-[11px] text-ohho-gold hover:underline"
                                 >
-                                  −
+                                  + Add-ons
                                 </button>
-                                <span className="text-sm text-ohho-cream w-6 text-center font-semibold">
-                                  {inCart.qty}
-                                </span>
-                                <button
-                                  onClick={() => setQty(item.id, inCart.qty + 1)}
-                                  className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
-                                >
-                                  +
-                                </button>
-                                <span className="ml-auto text-xs text-ohho-gold">
-                                  ₹{inCart.qty * item.price}
-                                </span>
-                              </div>
+                              </>
                             ) : (
-                              <button
-                                onClick={() => add(item)}
-                                className="w-full py-2 rounded-md bg-ohho-orange/15 text-ohho-orange font-semibold text-sm hover:bg-ohho-orange hover:text-ohho-black transition-colors border border-ohho-orange/30"
-                              >
-                                + Add to order
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => add(item)}
+                                  className="flex-1 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange font-semibold text-sm hover:bg-ohho-orange hover:text-ohho-black transition-colors border border-ohho-orange/30"
+                                >
+                                  + Add to order
+                                </button>
+                                <button
+                                  onClick={() => setAddOnModal(item)}
+                                  className="px-2 py-2 rounded-md text-[11px] text-ohho-cream-dim hover:text-ohho-gold border border-ohho-gold/15"
+                                  aria-label="Customize with add-ons"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Add-ons strip */}
+                <div className="mt-8 p-4 rounded-xl glass-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="font-display text-lg text-ohho-cream">
+                        ✨ Make it louder — Add-ons
+                      </div>
+                      <div className="text-xs text-ohho-cream-dim">
+                        Extra cheese, extra patty, extra dips. Tap any item&apos;s + to customize.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {addOns.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => add(a)}
+                        className="p-3 rounded-lg bg-ohho-black/40 border border-ohho-gold/10 hover:border-ohho-gold/40 text-left transition-colors"
+                      >
+                        <div className="text-2xl">{a.emoji}</div>
+                        <div className="text-xs font-semibold text-ohho-cream mt-1">
+                          {a.name}
+                        </div>
+                        <div className="text-[11px] text-ohho-gold">+₹{a.price}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -304,7 +445,7 @@ export function OrderingPlatform() {
                             className="text-ohho-cream-dim hover:text-ohho-red text-xs"
                             aria-label="Remove"
                           >
-                            ✕
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       ))
@@ -346,8 +487,10 @@ export function OrderingPlatform() {
                         Delivery address
                       </label>
                       <textarea
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
                         placeholder="Flat / House no, street, area, city, pincode"
-                        className="mt-1 w-full p-3 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 min-h-72px resize-none"
+                        className="mt-1 w-full p-3 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 resize-none"
                         rows={3}
                       />
                     </div>
@@ -380,6 +523,13 @@ export function OrderingPlatform() {
                     </div>
                   </div>
 
+                  {/* Loyalty hint */}
+                  {user && (
+                    <div className="mt-3 p-2 rounded-md bg-ohho-gold/8 border border-ohho-gold/15 text-[11px] text-ohho-cream/80">
+                      You&apos;ll earn <strong className="text-ohho-gold">{Math.floor(total / 10)} loyalty pts</strong> on this order.
+                    </div>
+                  )}
+
                   {/* Totals */}
                   <div className="mt-5 pt-4 border-t border-ohho-gold/10 space-y-1.5 text-sm">
                     <div className="flex justify-between text-ohho-cream-dim">
@@ -403,29 +553,131 @@ export function OrderingPlatform() {
                   </div>
 
                   <button
-                    disabled={lines.length === 0}
+                    disabled={lines.length === 0 || placing}
                     onClick={placeOrder}
                     className={cn(
-                      "mt-5 w-full py-3.5 rounded-md font-bold transition-all",
-                      lines.length === 0
+                      "mt-5 w-full py-3.5 rounded-md font-bold transition-all flex items-center justify-center gap-2",
+                      lines.length === 0 || placing
                         ? "bg-ohho-cream/10 text-ohho-cream-dim cursor-not-allowed"
                         : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-xl hover:shadow-ohho-orange/40"
                     )}
                   >
-                    {lines.length === 0
-                      ? "Add items to continue"
-                      : `Place order · ₹${total}`}
+                    {placing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Placing order…
+                      </>
+                    ) : lines.length === 0 ? (
+                      "Add items to continue"
+                    ) : !user ? (
+                      <>
+                        Sign in to place order · ₹{total}
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    ) : (
+                      `Place order · ₹${total}`
+                    )}
                   </button>
 
-                  <div className="mt-3 text-center text-[11px] text-ohho-cream-dim">
-                    🔒 Demo checkout — no real payment is processed.
-                  </div>
+                  {!user && lines.length > 0 && (
+                    <div className="mt-2 text-center text-[11px] text-ohho-cream-dim">
+                      Account required to track orders &amp; earn points.
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Add-ons modal */}
+      <AnimatePresence>
+        {addOnModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] grid place-items-center p-4 bg-ohho-black/80 backdrop-blur-md"
+            onClick={() => setAddOnModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 16 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl bg-ohho-black-light border border-ohho-gold/25 shadow-2xl p-6"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="font-display text-xl text-ohho-cream">
+                    Customize: {addOnModal.name}
+                  </div>
+                  <div className="text-xs text-ohho-cream-dim mt-0.5">
+                    Add extras to make it louder.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAddOnModal(null)}
+                  className="h-8 w-8 grid place-items-center rounded-md text-ohho-cream-dim hover:bg-ohho-orange/10 hover:text-ohho-cream"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {addOns.map((a) => {
+                  const selected = (selectedAddOns[addOnModal.id] || []).includes(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => toggleAddOn(addOnModal.id, a.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
+                        selected
+                          ? "bg-ohho-orange/15 border-ohho-orange"
+                          : "bg-ohho-black/40 border-ohho-gold/10 hover:border-ohho-gold/40"
+                      )}
+                    >
+                      <div className="h-12 w-12 rounded-md overflow-hidden bg-ohho-black flex-shrink-0">
+                        <img src={a.image} alt={a.name} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-semibold text-ohho-cream">
+                          {a.emoji} {a.name}
+                        </div>
+                        <div className="text-xs text-ohho-cream-dim line-clamp-1">
+                          {a.description}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-display text-ohho-gold">+₹{a.price}</div>
+                        <div
+                          className={cn(
+                            "mt-1 h-5 w-5 rounded-full border-2 ml-auto grid place-items-center",
+                            selected
+                              ? "bg-ohho-orange border-ohho-orange"
+                              : "border-ohho-cream-dim/40"
+                          )}
+                        >
+                          {selected && <CheckCircle2 className="h-3 w-3 text-ohho-black" />}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setAddOnModal(null)}
+                className="mt-5 w-full py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
+              >
+                Done
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

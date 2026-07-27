@@ -1,50 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight, Clock, ChevronRight } from "lucide-react";
 import { categories, menuItems } from "@/data/menu";
 import { cn } from "@/lib/utils";
 
-const ERA_META: Record<
-  string,
-  { year: string; era: string; blurb: string }
-> = {
-  Burgers: {
-    year: "2019",
-    era: "The Origin Era",
-    blurb:
-      "Where it all started — a single cart in Kairana, a perfectly crispy chicken patty, and a queue that didn't end. The burger built the brand.",
-  },
-  Sandwiches: {
-    year: "2020",
-    era: "The Brioche Era",
-    blurb:
-      "Customers asked for portable. We answered with flame-grilled stacks on thick brioche — a secret glaze made in batches of 20 litres, never more, never less.",
-  },
-  Pizzas: {
-    year: "2022",
-    era: "The Stone Era",
-    blurb:
-      "Compact stone-bake ovens engineered into 50 sq. ft. carts. A pizza, in 12 minutes, that competes with the chains — at half the price-point, twice the cheese.",
-  },
-  Snacks: {
-    year: "2023",
-    era: "The Skewer Era",
-    blurb:
-      "Spring Potato became our most-Instagrammed item in three weeks. We learned: a snack isn't a side, it's a hook. The cart got a second queue.",
-  },
-  Shakes: {
-    year: "2024",
-    era: "The Fuel Era",
-    blurb:
-      "Energy without compromise. Pure Boost, Prime Boost, Fusion Fuel — three power shakes engineered with our dietitians. The cart became a day-part brand.",
-  },
-};
-
 export function GenreTimeline() {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0); // 0..1
+  const [progress, setProgress] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
   const updateProgress = useCallback(() => {
@@ -53,7 +17,6 @@ export function GenreTimeline() {
     const max = el.scrollWidth - el.clientWidth;
     const p = max <= 0 ? 0 : el.scrollLeft / max;
     setProgress(p);
-    // active index = nearest card
     const cardWidth = el.scrollWidth / categories.length;
     const idx = Math.min(
       categories.length - 1,
@@ -66,7 +29,6 @@ export function GenreTimeline() {
     const el = scrollerRef.current;
     if (!el) return;
     el.addEventListener("scroll", updateProgress, { passive: true });
-    // Defer the initial sync to avoid setState-in-effect cascading renders
     const raf = requestAnimationFrame(updateProgress);
     return () => {
       el.removeEventListener("scroll", updateProgress);
@@ -81,224 +43,308 @@ export function GenreTimeline() {
     el.scrollBy({ left: dir * cardWidth, behavior: "smooth" });
   };
 
+  const active = categories[activeIdx];
+  const activeItems = menuItems.filter((m) => m.category === active.id);
+
   return (
     <section
       id="timeline"
       className="relative py-24 sm:py-32 bg-ohho-black-light overflow-hidden"
     >
-      {/* Section header */}
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+      {/* Ambient color glow that follows active era */}
+      <div
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 h-96 w-[80%] rounded-full blur-3xl opacity-25 transition-all duration-700 pointer-events-none"
+        style={{ background: active.color }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-gold/10 border border-ohho-gold/30 text-ohho-gold text-xs font-semibold tracking-wider uppercase">
               <Clock className="h-3.5 w-3.5" />
-              Horizontal Scroll Genre Timeline
+              The Menu Story — Horizontal Scroll Timeline
             </div>
             <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
-              Five genres. <span className="text-gradient-ohho">Five eras.</span>
+              Six genres. <span className="text-gradient-ohho">Six chapters.</span>
             </h2>
             <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
-              Scroll horizontally through the OHHO menu, era by era — each
-              category is a chapter in the brand&apos;s story. From the first
-              burger to the latest power shake.
+              From the first burger in Kairana ({categories[0].year}) to the latest add-on line ({categories[categories.length - 1].year}).
+              Scroll horizontally to walk through OHHO&apos;s menu story — each chapter
+              is a genre, each genre is an era.
             </p>
           </div>
 
-          {/* Nav arrows */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => scrollByCards(-1)}
-              disabled={activeIdx === 0}
-              aria-label="Previous era"
-              className="h-12 w-12 grid place-items-center rounded-full border border-ohho-gold/30 text-ohho-cream hover:bg-ohho-orange/15 hover:border-ohho-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => scrollByCards(1)}
-              disabled={activeIdx === categories.length - 1}
-              aria-label="Next era"
-              className="h-12 w-12 grid place-items-center rounded-full border border-ohho-gold/30 text-ohho-cream hover:bg-ohho-orange/15 hover:border-ohho-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </button>
+          {/* Nav arrows + counter */}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">
+                Chapter
+              </div>
+              <div className="font-display text-2xl text-ohho-cream">
+                <span style={{ color: active.color }}>{activeIdx + 1}</span>
+                <span className="text-ohho-cream-dim"> / {categories.length}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => scrollByCards(-1)}
+                disabled={activeIdx === 0}
+                aria-label="Previous chapter"
+                className="h-12 w-12 grid place-items-center rounded-full border border-ohho-gold/30 text-ohho-cream hover:bg-ohho-orange/15 hover:border-ohho-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => scrollByCards(1)}
+                disabled={activeIdx === categories.length - 1}
+                aria-label="Next chapter"
+                className="h-12 w-12 grid place-items-center rounded-full border border-ohho-gold/30 text-ohho-cream hover:bg-ohho-orange/15 hover:border-ohho-orange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Top progress rail */}
-      <div className="mx-auto max-w-7xl px-6 lg:px-12 mt-10">
-        <div className="relative h-1 rounded-full bg-ohho-cream/10">
-          <div
-            className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-ohho-orange via-ohho-gold to-ohho-orange transition-[width] duration-150"
-            style={{ width: `${Math.max(8, progress * 100)}%` }}
-          />
-          {categories.map((c, i) => {
-            const pos = (i / (categories.length - 1)) * 100;
-            const reached = i <= activeIdx;
-            return (
-              <button
-                key={c.id}
-                onClick={() => {
-                  const el = scrollerRef.current;
-                  if (!el) return;
-                  const cardWidth = el.scrollWidth / categories.length;
-                  el.scrollTo({ left: cardWidth * i, behavior: "smooth" });
-                }}
-                className="absolute -top-1.5 -translate-x-1/2 group"
-                style={{ left: `${pos}%` }}
-                aria-label={`Go to ${c.label} era`}
-              >
-                <div
-                  className={cn(
-                    "h-4 w-4 rounded-full border-2 transition-all",
-                    reached
-                      ? "bg-ohho-orange border-ohho-gold scale-110"
-                      : "bg-ohho-black border-ohho-cream/30 group-hover:border-ohho-gold"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute top-6 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider whitespace-nowrap transition-colors",
-                    i === activeIdx ? "text-ohho-gold" : "text-ohho-cream-dim"
-                  )}
-                >
-                  {c.emoji}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Horizontal scroll cards */}
-      <div
-        ref={scrollerRef}
-        className="mt-16 flex gap-6 overflow-x-auto snap-x-mandatory ohho-scroll ohho-scroll-x pb-6 px-6 lg:px-12 scroll-pl-6 lg:scroll-pl-12"
-        style={{ scrollbarWidth: "thin" }}
-      >
-        {categories.map((cat, i) => {
-          const items = menuItems.filter((m) => m.category === cat.id);
-          const meta = ERA_META[cat.id];
-          const isActive = i === activeIdx;
-          return (
-            <article
-              key={cat.id}
-              className="snap-center flex-shrink-0 w-[88vw] sm:w-[560px] lg:w-[640px] relative"
-            >
-              <div
-                className={cn(
-                  "relative rounded-2xl overflow-hidden glass-card transition-all duration-500",
-                  isActive ? "scale-100 opacity-100" : "scale-[0.97] opacity-80"
-                )}
-              >
-                {/* Era header */}
-                <div
-                  className="relative h-44 sm:h-52 p-6 flex flex-col justify-between"
-                  style={{
-                    background: `linear-gradient(135deg, ${cat.color}33 0%, transparent 60%), rgba(14,10,4,0.9)`,
+        {/* Top progress rail with markers */}
+        <div className="mt-10 relative">
+          <div className="relative h-1 rounded-full bg-ohho-cream/10">
+            <div
+              className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.max(8, progress * 100)}%`,
+                background: `linear-gradient(90deg, ${categories[0].color}, ${active.color})`,
+              }}
+            />
+            {categories.map((c, i) => {
+              const pos = (i / (categories.length - 1)) * 100;
+              const reached = i <= activeIdx;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    const el = scrollerRef.current;
+                    if (!el) return;
+                    const cardWidth = el.scrollWidth / categories.length;
+                    el.scrollTo({ left: cardWidth * i, behavior: "smooth" });
                   }}
+                  className="absolute -top-1.5 -translate-x-1/2 group"
+                  style={{ left: `${pos}%` }}
+                  aria-label={`Go to ${c.label} chapter`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div
+                    className={cn(
+                      "h-4 w-4 rounded-full border-2 transition-all",
+                      reached ? "scale-110" : "bg-ohho-black"
+                    )}
+                    style={{
+                      borderColor: reached ? c.color : "rgba(245,230,204,0.3)",
+                      background: reached ? c.color : "rgba(14,10,4,1)",
+                    }}
+                  />
+                  <div
+                    className={cn(
+                      "absolute top-6 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider whitespace-nowrap transition-colors",
+                      i === activeIdx ? "font-bold" : ""
+                    )}
+                    style={{ color: i === activeIdx ? c.color : "rgba(201,184,144,0.6)" }}
+                  >
+                    {c.year}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Horizontal scroll cards */}
+        <div
+          ref={scrollerRef}
+          className="mt-16 flex gap-6 overflow-x-auto snap-x-mandatory ohho-scroll ohho-scroll-x pb-6 px-1 scroll-pl-1"
+          style={{ scrollbarWidth: "thin" }}
+        >
+          {categories.map((cat, i) => {
+            const items = menuItems.filter((m) => m.category === cat.id);
+            const isActive = i === activeIdx;
+            const heroItem = items[0];
+            return (
+              <article
+                key={cat.id}
+                className="snap-center flex-shrink-0 w-[88vw] sm:w-[560px] lg:w-[640px] relative"
+              >
+                <div
+                  className={cn(
+                    "relative rounded-2xl overflow-hidden glass-card transition-all duration-500",
+                    isActive ? "scale-100 opacity-100" : "scale-[0.97] opacity-70"
+                  )}
+                >
+                  {/* Hero image area */}
+                  <div className="relative h-56 sm:h-64 overflow-hidden">
+                    {heroItem && (
+                      <img
+                        src={heroItem.image}
+                        alt={cat.label}
+                        className={cn(
+                          "h-full w-full object-cover transition-transform duration-700",
+                          isActive ? "scale-100" : "scale-105"
+                        )}
+                      />
+                    )}
+                    {/* Overlay gradient with category color tint */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(135deg, ${cat.color}55 0%, ${cat.color}22 40%, rgba(14,10,4,0.85) 100%)`,
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-ohho-black-light via-transparent to-transparent" />
+
+                    {/* Year + era badge */}
+                    <div className="absolute top-5 left-5">
                       <div
                         className="font-display text-5xl sm:text-6xl leading-none"
-                        style={{ color: cat.color }}
+                        style={{ color: "#fff", textShadow: `0 0 30px ${cat.color}` }}
                       >
-                        {meta.year}
+                        {cat.year}
                       </div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.3em] text-ohho-cream-dim">
-                        {meta.era}
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.3em] text-ohho-cream/85">
+                        {cat.era}
                       </div>
                     </div>
+
+                    {/* Emoji icon */}
                     <div
-                      className="h-16 w-16 rounded-2xl grid place-items-center text-4xl"
+                      className="absolute top-5 right-5 h-16 w-16 rounded-2xl grid place-items-center text-4xl"
                       style={{
                         background: `${cat.color}22`,
                         border: `1px solid ${cat.color}55`,
+                        backdropFilter: "blur(8px)",
                       }}
                     >
                       {cat.emoji}
                     </div>
-                  </div>
-                  <div>
-                    <div
-                      className="font-display text-3xl sm:text-4xl text-ohho-cream"
-                    >
-                      {cat.label}
-                    </div>
-                    <div className="text-sm text-ohho-cream/70 italic">
-                      {cat.tagline}
-                    </div>
-                  </div>
 
-                  {/* Era number tag */}
-                  <div className="absolute top-6 right-1/2 translate-x-32 sm:translate-x-44 hidden">
-                    {i + 1}/{categories.length}
-                  </div>
-                </div>
-
-                {/* Era blurb */}
-                <div className="p-6 pt-5">
-                  <p className="text-ohho-cream/80 leading-relaxed">
-                    {meta.blurb}
-                  </p>
-
-                  {/* Items in this era */}
-                  <div className="mt-5 space-y-2">
-                    <div className="text-xs uppercase tracking-wider text-ohho-cream-dim mb-2">
-                      Signature items in this era
-                    </div>
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-ohho-orange/5 transition-colors"
-                      >
-                        <div className="h-12 w-12 rounded-md overflow-hidden flex-shrink-0 bg-ohho-black">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-ohho-cream truncate">
-                            {item.emoji} {item.name}
-                          </div>
-                          <div className="text-xs text-ohho-cream-dim truncate">
-                            {item.prepTime} · {item.kcal} kcal
-                          </div>
-                        </div>
-                        <div className="font-display text-ohho-gold text-lg">
-                          ₹{item.price}
-                        </div>
+                    {/* Category title at bottom of image */}
+                    <div className="absolute bottom-5 left-5 right-5">
+                      <div className="font-display text-3xl sm:text-4xl text-ohho-cream">
+                        {cat.label}
                       </div>
-                    ))}
+                      <div className="text-sm text-ohho-cream/85 italic">
+                        {cat.tagline}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Era blurb */}
+                  <div className="p-6 pt-5">
+                    <p className="text-ohho-cream/80 leading-relaxed text-sm">
+                      {cat.blurb}
+                    </p>
+
+                    {/* Items grid */}
+                    <div className="mt-5 grid grid-cols-2 gap-2">
+                      {items.slice(0, 4).map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-2 p-2 rounded-lg bg-ohho-black/40 border border-ohho-gold/10"
+                        >
+                          <div className="h-10 w-10 rounded-md overflow-hidden flex-shrink-0 bg-ohho-black">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] font-semibold text-ohho-cream truncate">
+                              {item.emoji} {item.name}
+                            </div>
+                            <div className="text-[10px] text-ohho-gold">
+                              ₹{item.price} · {item.prepTime}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer with item count */}
+                    <div className="mt-4 pt-4 border-t border-ohho-gold/10 flex items-center justify-between text-[11px]">
+                      <span className="text-ohho-cream-dim">
+                        {items.length} item{items.length !== 1 ? "s" : ""} in this chapter
+                      </span>
+                      <a
+                        href="#menu"
+                        className="inline-flex items-center gap-1 font-semibold hover:underline"
+                        style={{ color: cat.color }}
+                      >
+                        View in menu <ChevronRight className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Side ribbon */}
+                  <div
+                    className="absolute top-0 bottom-0 left-0 w-1.5"
+                    style={{ background: cat.color }}
+                  />
                 </div>
+              </article>
+            );
+          })}
+        </div>
 
-                {/* Side ribbon */}
-                <div
-                  className="absolute top-0 bottom-0 left-0 w-1.5"
-                  style={{ background: cat.color }}
-                />
-              </div>
+        {/* Scroll hint */}
+        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-ohho-cream-dim">
+          <ArrowLeft className="h-3.5 w-3.5 animate-pulse" />
+          Drag, scroll, or use arrows to traverse the chapters
+          <ArrowRight className="h-3.5 w-3.5 animate-pulse" />
+        </div>
 
-              {/* Era counter below card */}
-              <div className="mt-3 text-center text-xs text-ohho-cream-dim">
-                Era {i + 1} of {categories.length} ·{" "}
-                <span style={{ color: cat.color }}>{cat.label}</span>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
-      {/* Scroll hint */}
-      <div className="mx-auto max-w-7xl px-6 lg:px-12 mt-2 flex items-center justify-center gap-2 text-xs text-ohho-cream-dim">
-        <ArrowLeft className="h-3.5 w-3.5 animate-pulse" />
-        Drag or scroll horizontally to traverse the eras
-        <ArrowRight className="h-3.5 w-3.5 animate-pulse" />
+        {/* Active era deep-dive panel */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.4 }}
+            className="mt-10 p-6 rounded-2xl glass-card"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{active.emoji}</span>
+              <h3 className="font-display text-2xl text-ohho-cream">
+                {active.year} · {active.label}
+              </h3>
+              <span
+                className="ml-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  background: `${active.color}22`,
+                  color: active.color,
+                  border: `1px solid ${active.color}55`,
+                }}
+              >
+                Chapter {activeIdx + 1} of {categories.length}
+              </span>
+            </div>
+            <p className="text-ohho-cream/75 leading-relaxed">
+              {active.blurb}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {activeItems.map((item) => (
+                <a
+                  key={item.id}
+                  href="#menu"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-ohho-gold/20 text-ohho-cream hover:bg-ohho-gold/10 hover:border-ohho-gold/50 transition-all"
+                >
+                  <span>{item.emoji}</span>
+                  {item.name}
+                  <span className="text-ohho-gold">₹{item.price}</span>
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </section>
   );

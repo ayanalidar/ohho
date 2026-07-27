@@ -1,7 +1,7 @@
 "use client";
 
 import { Phone, Mail, Globe, Instagram, MapPin, Flame } from "lucide-react";
-import { contactInfo, presenceHubs } from "@/data/menu";
+import { contactInfo, testedLocations } from "@/data/menu";
 
 export function Footer() {
   return (
@@ -124,26 +124,26 @@ export function Footer() {
           {/* Presence */}
           <div className="lg:col-span-3">
             <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-gold font-semibold mb-4">
-              Presence — 48+ outlets
+              Tested locations — operational
             </div>
             <ul className="space-y-2 text-sm">
-              {presenceHubs.slice(0, 6).map((h) => (
+              {testedLocations.map((l) => (
                 <li
-                  key={h.city}
+                  key={l.city}
                   className="flex items-center justify-between text-ohho-cream/70"
                 >
                   <span className="flex items-center gap-1.5">
                     <MapPin className="h-3 w-3 text-ohho-orange" />
-                    {h.city}
+                    {l.city}
                   </span>
                   <span className="text-ohho-cream-dim text-xs">
-                    {h.outlets} outlets · ⭐ {h.rating}
+                    ⭐ {l.rating} · {l.customers.toLocaleString()}+ served
                   </span>
                 </li>
               ))}
             </ul>
             <div className="mt-4 text-xs text-ohho-cream-dim">
-              Plus Shamli, Kairana &amp; 12 more cities.
+              2 carts live · 10,000+ happy customers · 80% retention.
             </div>
           </div>
         </div>

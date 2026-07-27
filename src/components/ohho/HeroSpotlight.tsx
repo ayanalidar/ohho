@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Flame, MapPin, Star, Truck } from "lucide-react";
 import { ohhoStats } from "@/data/menu";
 
-// Hero images cycle — using OHHO's actual product photography
+// Hero images cycle — AI-generated premium OHHO food photography
 const HERO_IMAGES = [
-  "https://www.ohhofoods.com/assets/OHHO%20Special%20Chicken%20Burger-BQo3y2S1.jpeg",
-  "https://www.ohhofoods.com/assets/Ohho%20Special%20Chicken%20Pizza-fcdL9yP1.jpeg",
-  "https://www.ohhofoods.com/assets/OHHO%20Special%20Chicken%20Sandwich--zEdDhvn.jpeg",
-  "https://www.ohhofoods.com/assets/Fusion%20Fuel%20-%20Ultimate%20Energy%20Shake-CCDHEVAC.jpeg",
+  "/ohho-images/ohho-special-chicken-burger.png",
+  "/ohho-images/ohho-special-chicken-pizza.png",
+  "/ohho-images/ohho-special-chicken-sandwich.png",
+  "/ohho-images/cold-coffee.png",
 ];
 
 const HERO_INTERVAL_MS = 4200;

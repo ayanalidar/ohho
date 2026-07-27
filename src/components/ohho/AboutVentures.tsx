@@ -8,8 +8,11 @@ import {
   Trophy,
   Handshake,
   Sparkles,
+  MapPin,
+  Star,
+  Users,
 } from "lucide-react";
-import { ventureStages, ohhoStats } from "@/data/menu";
+import { ventureStages, ohhoStats, testedLocations } from "@/data/menu";
 
 const ICONS: Record<string, React.ElementType> = {
   Target,
@@ -76,6 +79,75 @@ export function AboutVentures() {
               </div>
             </div>
           ))}
+        </motion.div>
+
+        {/* Tested Locations showcase */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.5 }}
+          className="mt-12"
+        >
+          <div className="flex items-end justify-between mb-5 flex-wrap gap-2">
+            <div>
+              <div className="text-xs tracking-[0.3em] uppercase text-ohho-gold font-semibold">
+                Proven on the ground
+              </div>
+              <h3 className="mt-2 font-display text-2xl sm:text-3xl text-ohho-cream">
+                2 locations tested. <span className="text-gradient-ohho">10,000+ served.</span>
+              </h3>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ohho-gold/10 border border-ohho-gold/30 text-ohho-gold text-xs font-semibold">
+              <Users className="h-3.5 w-3.5" />
+              80% retention rate
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {testedLocations.map((loc) => (
+              <div
+                key={loc.city}
+                className="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col"
+              >
+                <div className="relative h-40 overflow-hidden">
+                  <img
+                    src={loc.image}
+                    alt={`OHHO cart in ${loc.city}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ohho-black-light via-transparent to-transparent" />
+                  <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-ohho-orange/90 text-ohho-black text-[10px] font-bold uppercase tracking-wider">
+                    <span className="h-1.5 w-1.5 rounded-full bg-ohho-black" />
+                    {loc.status}
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="font-display text-2xl text-ohho-cream">
+                      {loc.city}
+                    </div>
+                    <div className="text-xs text-ohho-cream/80 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {loc.area}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 flex-1 flex flex-col">
+                  <p className="text-sm text-ohho-cream/75 leading-relaxed flex-1">
+                    {loc.note}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-xs">
+                    <span className="inline-flex items-center gap-1 text-ohho-gold">
+                      <Star className="h-3.5 w-3.5 fill-ohho-gold" />
+                      {loc.rating} rating
+                    </span>
+                    <span className="text-ohho-cream-dim">
+                      {loc.customers.toLocaleString()}+ customers
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </motion.div>
 
         {/* The 5-stage model */}

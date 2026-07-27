@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,19 +11,51 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  phone         String?
+  role          String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  addresses     String?   // JSON string of saved addresses
+  loyaltyPoints Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Order {
+  id              String      @id @default(cuid())
+  orderId         String      @unique // human-readable: OHHO-XXXXX-XXXX
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  subtotal        Int
+  deliveryFee     Int
+  taxes           Int
+  total           Int
+  mode            String      // delivery | pickup
+  status          String      @default("PREPARING") // PREPARING | PICKED | ENROUTE | NEAR | ARRIVED | CANCELLED
+  address         String?
+  paymentMethod   String      // upi | card | cod
+  paymentStatus   String      @default("PAID") // PAID | PENDING | REFUNDED
+  etaSeconds      Int         @default(1500)
+  progress        Float       @default(0) // 0..1 — for live tracking
+  invoiceNumber   String?     @unique
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId    String  // menu item id
+  name      String
+  emoji     String
+  image     String
+  price     Int
+  qty       Int
+  addOns    String? // JSON string of add-on item ids
 }
