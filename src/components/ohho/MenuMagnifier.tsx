@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Plus, Flame, Clock, Star, ShoppingCart } from "lucide-react";
 import { menuItems, type MenuItem } from "@/data/menu";
 import { useCart } from "@/store/cart";
+import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
 const ZOOM = 4; // 4x magnifier
@@ -101,6 +102,7 @@ function MagnifierImage({ item }: { item: MenuItem }) {
 export function MenuMagnifier() {
   const [activeTag, setActiveTag] = useState<string>("All");
   const add = useCart((s) => s.add);
+  const { navigate } = useNav();
 
   const tags = useMemo(() => ["All", "Signature", "Bestseller", "Trending"], []);
   const filtered = useMemo(() => {

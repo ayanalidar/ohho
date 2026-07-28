@@ -23,6 +23,7 @@ import {
 import { menuItems, categories, type MenuItem } from "@/data/menu";
 import { useCart, cartSubtotal, cartCount } from "@/store/cart";
 import { useAuth } from "@/components/ohho/AuthProvider";
+import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = [
@@ -45,6 +46,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
 
   const { lines, add, setQty, remove, clear } = useCart();
   const { user } = useAuth();
+  const { navigate } = useNav();
   const subtotal = cartSubtotal(lines);
   const count = cartCount(lines);
   const deliveryFee = mode === "delivery" && subtotal > 0 ? (subtotal > 400 ? 0 : 39) : 0;
@@ -195,13 +197,13 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                 </div>
               </div>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                <a
-                  href="#track"
+                <button
+                  onClick={() => navigate("track")}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
                 >
                   <Truck className="h-4 w-4" />
                   Track your order
-                </a>
+                </button>
                 <button
                   onClick={() => setPlaced(null)}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10"

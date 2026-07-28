@@ -2,8 +2,10 @@
 
 import { Phone, Mail, Globe, Instagram, MapPin, Flame } from "lucide-react";
 import { contactInfo, testedLocations } from "@/data/menu";
+import { useNav } from "@/components/ohho/nav-context";
 
 export function Footer() {
+  const { navigate } = useNav();
   return (
     <footer className="relative bg-ohho-black-light border-t border-ohho-gold/15 pt-16 pb-8 grain">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
@@ -92,22 +94,22 @@ export function Footer() {
             </div>
             <ul className="space-y-2 text-sm">
               {[
-                ["#hero", "Home"],
-                ["#about", "OHHO Food Ventures"],
-                ["#menu", "Menu"],
-                ["#timeline", "Genre Timeline"],
-                ["#tour", "3D Tour"],
-                ["#order", "Order Online"],
-                ["#track", "Track Order"],
-                ["#audio", "Audio Guide"],
-              ].map(([href, label]) => (
-                <li key={href}>
-                  <a
-                    href={href}
-                    className="text-ohho-cream/70 hover:text-ohho-gold transition-colors"
+                ["home", "Home"],
+                ["company", "Company"],
+                ["menu", "Menu"],
+                ["order", "Order Online"],
+                ["timeline", "Genre Timeline"],
+                ["tour", "3D Tour"],
+                ["track", "Track Order"],
+                ["rewards", "Rewards"],
+              ].map(([target, label]) => (
+                <li key={target}>
+                  <button
+                    onClick={() => navigate(target)}
+                    className="text-ohho-cream/70 hover:text-ohho-gold transition-colors text-left"
                   >
                     {label}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -147,12 +149,12 @@ export function Footer() {
             <div className="text-xs text-ohho-cream-dim mt-1">
               ₹1.5–3.5L fee · 4–8% royalty · 50–150 sq. ft. · 45-day setup
             </div>
-            <a
-              href="#about"
+            <button
+              onClick={() => navigate("company")}
               className="mt-2 inline-flex text-xs text-ohho-gold hover:underline"
             >
               Become a Franchisee →
-            </a>
+            </button>
           </div>
           <div className="p-4 rounded-xl glass-card">
             <div className="font-display text-lg text-ohho-cream">Careers</div>

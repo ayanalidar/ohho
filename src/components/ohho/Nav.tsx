@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 import { Menu, ShoppingBag, X, Plus, Minus, Trash2, User, LogOut, LayoutDashboard, ShieldCheck, ChevronDown } from "lucide-react";
 import { useCart, cartCount, cartSubtotal } from "@/store/cart";
 import { useAuth } from "@/components/ohho/AuthProvider";
+import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { href: "#hero", label: "Home" },
-  { href: "#about", label: "OHHO Food Ventures" },
-  { href: "#menu", label: "Menu" },
-  { href: "#timeline", label: "Timeline" },
-  { href: "#tour", label: "3D Tour" },
-  { href: "#order", label: "Order Online" },
-  { href: "#track", label: "Track" },
-  { href: "#rewards", label: "Rewards" },
-];
+const NAV_TABS = [
+  { view: "home", label: "Home" },
+  { view: "company", label: "Company" },
+  { view: "menu", label: "Menu" },
+  { view: "order", label: "Order Online" },
+] as const;
+
+const NAV_SCROLL = [
+  { target: "timeline", label: "Timeline" },
+  { target: "tour", label: "3D Tour" },
+  { target: "track", label: "Track" },
+  { target: "rewards", label: "Rewards" },
+] as const;
 
 export function Nav({
   onOpenAuth,
@@ -31,6 +35,7 @@ export function Nav({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { lines, isOpen, open, close, setQty, remove } = useCart();
   const { user, signOut } = useAuth();
+  const { navigate, currentView } = useNav();
   const count = cartCount(lines);
   const subtotal = cartSubtotal(lines);
 
@@ -47,35 +52,53 @@ export function Nav({
         className={cn(
           "fixed top-0 inset-x-0 z-50 transition-all duration-500",
           scrolled
-            ? "bg-ohho-black/85 backdrop-blur-xl border-b border-ohho-gold/15 py-3"
-            : "bg-transparent py-5"
+            ? "bg-ohho-black/90 backdrop-blur-xl border-b border-ohho-gold/15 py-2.5"
+            : "bg-ohho-black/60 backdrop-blur-md py-3"
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Logo */}
-          <a href="#hero" className="flex items-center gap-2.5 group">
+          <button
+            onClick={() => navigate("home")}
+            className="flex items-center gap-2.5 group flex-shrink-0"
+          >
             <img
               src="/ohho-images/ohho-logo-full.png"
               alt="OHHO BURGERS — Live Premium"
-              className="h-10 sm:h-12 w-auto object-contain transition-opacity group-hover:opacity-90"
+              className="h-9 sm:h-11 w-auto object-contain transition-opacity group-hover:opacity-90"
             />
-          </a>
+          </button>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="px-3 py-2 text-sm text-ohho-cream/80 hover:text-ohho-gold transition-colors rounded-md hover:bg-ohho-gold/5"
+          {/* Desktop nav — tabs + scroll links */}
+          <nav className="hidden lg:flex items-center gap-0.5">
+            {NAV_TABS.map((t) => (
+              <button
+                key={t.view}
+                onClick={() => navigate(t.view)}
+                className={cn(
+                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                  currentView === t.view
+                    ? "text-ohho-gold bg-ohho-gold/10"
+                    : "text-ohho-cream/80 hover:text-ohho-gold hover:bg-ohho-gold/5"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+            <span className="w-px h-5 bg-ohho-gold/20 mx-1" />
+            {NAV_SCROLL.map((l) => (
+              <button
+                key={l.target}
+                onClick={() => navigate(l.target)}
+                className="px-3 py-2 text-sm text-ohho-cream/70 hover:text-ohho-gold hover:bg-ohho-gold/5 rounded-md transition-colors"
               >
                 {l.label}
-              </a>
+              </button>
             ))}
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Cart */}
             <button
               onClick={open}
@@ -159,12 +182,12 @@ export function Nav({
               </button>
             )}
 
-            <a
-              href="#order"
-              className="hidden sm:inline-flex h-10 items-center px-4 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-semibold text-sm hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
+            <button
+              onClick={() => navigate("order")}
+              className="hidden sm:inline-flex h-10 items-center px-3 lg:px-4 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-semibold text-sm hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
             >
               Order Now
-            </a>
+            </button>
 
             <button
               onClick={() => setMobileOpen((v) => !v)}
@@ -179,15 +202,35 @@ export function Nav({
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="lg:hidden mx-4 mt-3 rounded-xl glass-card p-3">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-3 rounded-md text-ohho-cream hover:bg-ohho-orange/10 hover:text-ohho-gold"
+            {NAV_TABS.map((t) => (
+              <button
+                key={t.view}
+                onClick={() => {
+                  navigate(t.view);
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  "block w-full px-4 py-3 rounded-md text-left font-medium",
+                  currentView === t.view
+                    ? "text-ohho-gold bg-ohho-gold/10"
+                    : "text-ohho-cream hover:bg-ohho-orange/10"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+            <div className="my-2 ohho-divider" />
+            {NAV_SCROLL.map((l) => (
+              <button
+                key={l.target}
+                onClick={() => {
+                  navigate(l.target);
+                  setMobileOpen(false);
+                }}
+                className="block w-full px-4 py-3 rounded-md text-left text-ohho-cream/70 hover:bg-ohho-orange/10 hover:text-ohho-gold"
               >
                 {l.label}
-              </a>
+              </button>
             ))}
             {!user && (
               <button
@@ -200,13 +243,15 @@ export function Nav({
                 Sign in / Create account
               </button>
             )}
-            <a
-              href="#order"
-              onClick={() => setMobileOpen(false)}
-              className="block mt-2 px-4 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-semibold text-center"
+            <button
+              onClick={() => {
+                navigate("order");
+                setMobileOpen(false);
+              }}
+              className="block w-full mt-2 px-4 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-semibold text-center"
             >
               Order Now
-            </a>
+            </button>
           </div>
         )}
       </header>
@@ -251,9 +296,18 @@ export function Nav({
               <div className="text-center py-20">
                 <div className="text-5xl mb-4">🍔</div>
                 <div className="font-display text-xl text-ohho-cream mb-1">Cart is empty</div>
-                <div className="text-sm text-ohho-cream-dim">
+                <div className="text-sm text-ohho-cream-dim mb-4">
                   Add a Crispy Chicken Burger to get started.
                 </div>
+                <button
+                  onClick={() => {
+                    close();
+                    navigate("menu");
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 text-sm font-semibold hover:bg-ohho-orange/25"
+                >
+                  Browse Menu
+                </button>
               </div>
             )}
 
@@ -318,13 +372,15 @@ export function Nav({
                 <span>Delivery (added at checkout)</span>
                 <span>Calculated next</span>
               </div>
-              <a
-                href="#order"
-                onClick={close}
+              <button
+                onClick={() => {
+                  close();
+                  navigate("order");
+                }}
                 className="block w-full py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold text-center hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
               >
                 Checkout →
-              </a>
+              </button>
             </div>
           )}
         </aside>

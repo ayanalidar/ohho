@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Crown, Star, Gift, TrendingUp, Sparkles, Quote } from "lucide-react";
 import { rewardTiers, customerStories } from "@/data/menu";
+import { useNav } from "@/components/ohho/nav-context";
 
 const RING_SIZE = 160;
 const RING_STROKE = 6;
@@ -112,6 +113,7 @@ function TierRing({ tier, index }: { tier: typeof rewardTiers[number]; index: nu
 }
 
 export function RewardsSection() {
+  const { navigate } = useNav();
   return (
     <section
       id="rewards"
@@ -277,12 +279,12 @@ export function RewardsSection() {
               in the Bronze tier — earning points on every bite.
             </div>
           </div>
-          <a
-            href="#order"
+          <button
+            onClick={() => navigate("order")}
             className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold whitespace-nowrap hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
           >
             Start earning →
-          </a>
+          </button>
         </motion.div>
       </div>
     </section>

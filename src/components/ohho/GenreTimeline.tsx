@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, ChevronRight } from "lucide-react";
 import { categories, menuItems } from "@/data/menu";
+import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
 export function GenreTimeline() {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const { navigate } = useNav();
   const [progress, setProgress] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -273,13 +275,13 @@ export function GenreTimeline() {
                       <span className="text-ohho-cream-dim">
                         {items.length} item{items.length !== 1 ? "s" : ""} in this chapter
                       </span>
-                      <a
-                        href="#menu"
+                      <button
+                        onClick={() => navigate("menu")}
                         className="inline-flex items-center gap-1 font-semibold hover:underline"
                         style={{ color: cat.color }}
                       >
                         View in menu <ChevronRight className="h-3 w-3" />
-                      </a>
+                      </button>
                     </div>
                   </div>
 
@@ -332,15 +334,15 @@ export function GenreTimeline() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {activeItems.map((item) => (
-                <a
+                <button
                   key={item.id}
-                  href="#menu"
+                  onClick={() => navigate("menu")}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-ohho-gold/20 text-ohho-cream hover:bg-ohho-gold/10 hover:border-ohho-gold/50 transition-all"
                 >
                   <span>{item.emoji}</span>
                   {item.name}
                   <span className="text-ohho-gold">₹{item.price}</span>
-                </a>
+                </button>
               ))}
             </div>
           </motion.div>

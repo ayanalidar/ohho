@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { ventureStages, ohhoStats, testedLocations } from "@/data/menu";
+import { useNav } from "@/components/ohho/nav-context";
 
 const ICONS: Record<string, React.ElementType> = {
   Target,
@@ -23,6 +24,7 @@ const ICONS: Record<string, React.ElementType> = {
 };
 
 export function AboutVentures() {
+  const { navigate } = useNav();
   return (
     <section
       id="about"
@@ -263,8 +265,8 @@ export function AboutVentures() {
             </div>
           </div>
           <a
-            href="#order"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold whitespace-nowrap hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
+            onClick={() => navigate("order")}
+            className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold whitespace-nowrap hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow cursor-pointer"
           >
             Become a Franchisee →
           </a>

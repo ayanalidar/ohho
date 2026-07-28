@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Flame, MapPin, Star, Truck } from "lucide-react";
 import { ohhoStats } from "@/data/menu";
+import { useNav } from "@/components/ohho/nav-context";
 
 // Hero images cycle — AI-generated premium OHHO food photography
 const HERO_IMAGES = [
@@ -16,6 +17,7 @@ const HERO_IMAGES = [
 const HERO_INTERVAL_MS = 4200;
 
 export function HeroSpotlight() {
+  const { navigate } = useNav();
   const [idx, setIdx] = useState(0);
   const [pos, setPos] = useState({ x: 0.5, y: 0.45 });
   const [active, setActive] = useState(false);
@@ -172,25 +174,25 @@ export function HeroSpotlight() {
               transition={{ delay: 0.55, duration: 0.7 }}
               className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4"
             >
-              <a
-                href="#order"
+              <button
+                onClick={() => navigate("order")}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold tracking-wide hover:shadow-2xl hover:shadow-ohho-orange/50 transition-shadow"
               >
                 Order Now
                 <span className="text-base">→</span>
-              </a>
-              <a
-                href="#menu"
+              </button>
+              <button
+                onClick={() => navigate("menu")}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md bg-ohho-black/40 backdrop-blur border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10 hover:border-ohho-gold/60 transition-colors"
               >
                 Explore Menu
-              </a>
-              <a
-                href="#about"
+              </button>
+              <button
+                onClick={() => navigate("company")}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md text-ohho-cream-dim hover:text-ohho-gold transition-colors font-medium"
               >
                 About the Company
-              </a>
+              </button>
             </motion.div>
 
             {/* Live mini-stats */}
@@ -235,13 +237,13 @@ export function HeroSpotlight() {
                 48+ outlets · 18+ cities
               </span>
             </div>
-            <a
-              href="#about"
+            <button
+              onClick={() => navigate("company")}
               className="inline-flex items-center gap-1.5 text-xs text-ohho-cream-dim hover:text-ohho-gold transition-colors"
             >
               <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
               Scroll to explore
-            </a>
+            </button>
           </div>
         </div>
       </div>
