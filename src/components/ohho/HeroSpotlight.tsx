@@ -19,9 +19,11 @@ const HERO_INTERVAL_MS = 4200;
 export function HeroSpotlight() {
   const { navigate } = useNav();
   const [idx, setIdx] = useState(0);
-  const [pos, setPos] = useState({ x: 0.5, y: 0.45 });
-  const [active, setActive] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);       // spotlight background layer
+  const crosshairRef = useRef<HTMLDivElement>(null); // crosshair element
+  const rafRef = useRef<number | null>(null);      // rAF throttle
+  const posRef = useRef({ x: 0.5, y: 0.45 });
 
   // cross-fade timer
   useEffect(() => {
@@ -29,49 +31,56 @@ export function HeroSpotlight() {
     return () => clearInterval(t);
   }, []);
 
-  // spotlight follow cursor
+  // spotlight follow cursor — uses refs + rAF, NO React state updates
   useEffect(() => {
     const el = heroRef.current;
-    if (!el) return;
+    const bg = bgRef.current;
+    const cross = crosshairRef.current;
+    if (!el || !bg || !cross) return;
+
+    const apply = () => {
+      rafRef.current = null;
+      const { x, y } = posRef.current;
+      const px = `${x * 100}%`;
+      const py = `${y * 100}%`;
+      bg.style.background = `radial-gradient(circle 380px at ${px} ${py},
+        rgba(255, 193, 7, 0.22) 0%,
+        rgba(255, 106, 0, 0.12) 25%,
+        transparent 65%)`;
+      bg.style.opacity = "1";
+      cross.style.left = px;
+      cross.style.top = py;
+      cross.style.opacity = "0.9";
+    };
+
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
-      setPos({
+      posRef.current = {
         x: (e.clientX - rect.left) / rect.width,
         y: (e.clientY - rect.top) / rect.height,
-      });
+      };
+      if (rafRef.current == null) rafRef.current = requestAnimationFrame(apply);
     };
-    const onEnter = () => setActive(true);
-    const onLeave = () => setActive(false);
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseenter", onEnter);
-    el.addEventListener("mouseleave", onLeave);
+    const onLeave = () => {
+      bg.style.opacity = "0.35";
+      cross.style.opacity = "0";
+    };
+
+    el.addEventListener("mousemove", onMove, { passive: true });
+    el.addEventListener("mouseleave", onLeave, { passive: true });
     return () => {
       el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseenter", onEnter);
       el.removeEventListener("mouseleave", onLeave);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  // spotlight mask position (in px) — used to drive the radial gradient
-  const spotlightX = `${pos.x * 100}%`;
-  const spotlightY = `${pos.y * 100}%`;
 
   return (
     <section
       id="hero"
       ref={heroRef}
       className="relative min-h-[100svh] w-full overflow-hidden grain"
-      style={{
-        // Two layered backgrounds: dark base + spotlight that follows cursor
-        background: `
-          radial-gradient(600px circle at ${spotlightX} ${spotlightY},
-            rgba(255, 106, 0, 0.18) 0%,
-            rgba(255, 193, 7, 0.08) 30%,
-            transparent 70%),
-          #0e0a04
-        `,
-        transition: "background 200ms ease-out",
-      }}
+      style={{ background: "#0e0a04" }}
     >
       {/* Cross-fading hero image layer */}
       <div className="absolute inset-0">
@@ -96,12 +105,13 @@ export function HeroSpotlight() {
         <div className="absolute inset-0 bg-gradient-to-b from-ohho-black/80 via-ohho-black/55 to-ohho-black" />
         <div className="absolute inset-0 bg-gradient-to-r from-ohho-black/90 via-transparent to-ohho-black/60" />
 
-        {/* Spotlight overlay (the bright "spotlight" following cursor) */}
+        {/* Spotlight overlay (the bright "spotlight" following cursor) — driven by refs, no re-render */}
         <div
+          ref={bgRef}
           className="absolute inset-0 pointer-events-none transition-opacity duration-500"
           style={{
-            opacity: active ? 1 : 0.35,
-            background: `radial-gradient(circle 380px at ${spotlightX} ${spotlightY},
+            opacity: 0.35,
+            background: `radial-gradient(circle 380px at 50% 45%,
               rgba(255, 193, 7, 0.22) 0%,
               rgba(255, 106, 0, 0.12) 25%,
               transparent 65%)`,
@@ -109,13 +119,14 @@ export function HeroSpotlight() {
           }}
         />
 
-        {/* Animated crosshair indicator at spotlight center (only when active) */}
+        {/* Animated crosshair indicator at spotlight center — driven by refs */}
         <div
+          ref={crosshairRef}
           className="absolute pointer-events-none transition-opacity duration-300"
           style={{
-            left: spotlightX,
-            top: spotlightY,
-            opacity: active ? 0.9 : 0,
+            left: "50%",
+            top: "45%",
+            opacity: 0,
             transform: "translate(-50%, -50%)",
           }}
         >

@@ -1,0 +1,63 @@
+{
+  "name": "OHHO BURGERS — Live Premium",
+  "short_name": "OHHO",
+  "description": "Premium burgers, pizzas, sandwiches & shakes by OHHO Food Ventures. Order online, track live, earn rewards.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0e0a04",
+  "theme_color": "#ff6a00",
+  "categories": ["food", "lifestyle", "shopping"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/ohho-images/ohho-logo-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ohho-images/ohho-logo-sm.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ohho-images/ohho-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ohho-images/ohho-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Order Online",
+      "short_name": "Order",
+      "description": "Build your cart and check out",
+      "url": "/?view=order",
+      "icons": [{ "src": "/ohho-images/ohho-logo-64.png", "sizes": "64x64", "type": "image/png" }]
+    },
+    {
+      "name": "View Menu",
+      "short_name": "Menu",
+      "description": "Browse the full OHHO menu",
+      "url": "/?view=menu",
+      "icons": [{ "src": "/ohho-images/ohho-logo-64.png", "sizes": "64x64", "type": "image/png" }]
+    },
+    {
+      "name": "Track Order",
+      "short_name": "Track",
+      "description": "Live delivery tracking",
+      "url": "/?view=home#track",
+      "icons": [{ "src": "/ohho-images/ohho-logo-64.png", "sizes": "64x64", "type": "image/png" }]
+    }
+  ]
+}

@@ -152,8 +152,7 @@ function FoodCart() {
         <meshStandardMaterial color="#2a1d0a" metalness={0.7} roughness={0.3} />
       </mesh>
 
-      {/* Steam effect — small spheres rising (animated via FogSteam component) */}
-      <FogSteam position={[-1.0, 1.7, 0]} />
+      {/* Steam effect removed for performance — was forcing continuous useFrame */}
 
       {/* Storage — under-counter box on right */}
       <mesh position={[1.2, 0.55, -0.4]} castShadow>
@@ -226,33 +225,10 @@ function ShakeCup({ position }: { position: [number, number, number] }) {
   );
 }
 
-function FogSteam({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame((state) => {
-    if (!ref.current) return;
-    const t = state.clock.elapsedTime;
-    ref.current.children.forEach((c, i) => {
-      const phase = (t + i * 0.5) % 2;
-      c.position.y = phase * 0.4;
-      const mat = (c as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      mat.opacity = Math.max(0, 0.5 - phase * 0.25);
-    });
-  });
-  return (
-    <group ref={ref} position={position}>
-      {[0, 0.5, 1].map((o, i) => (
-        <mesh key={i} position={[0, 0, 0]}>
-          <sphereGeometry args={[0.12, 8, 8]} />
-          <meshStandardMaterial
-            color="#f5e6cc"
-            transparent
-            opacity={0.4}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
+function FogSteam(_props: { position: [number, number, number] }) {
+  // Removed: continuous useFrame was forcing the WebGL canvas to render every frame.
+  // Replaced with a static cluster of steam spheres for visual cue without cost.
+  return null;
 }
 
 // ----- Hotspot marker -----
@@ -308,6 +284,7 @@ function CameraRig({
   controlsRef: React.RefObject<any>;
 }) {
   const { camera } = useThree();
+  const { invalidate } = useThree();
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
   const animating = useRef(false);
@@ -317,7 +294,8 @@ function CameraRig({
     targetPos.current.set(...target.camera);
     targetLook.current.set(...target.target);
     animating.current = true;
-  }, [target]);
+    invalidate(); // kick a render in demand mode
+  }, [target, invalidate]);
 
   useFrame(() => {
     if (!animating.current) return;
@@ -329,6 +307,7 @@ function CameraRig({
     if (camera.position.distanceTo(targetPos.current) < 0.05) {
       animating.current = false;
     }
+    invalidate(); // keep rendering while animating
   });
 
   return null;
@@ -343,6 +322,7 @@ function Scene({
   onTeleport: (h: Hotspot) => void;
 }) {
   const controlsRef = useRef<any>(null);
+  const { invalidate } = useThree();
   const target =
     activeHotspot
       ? { camera: activeHotspot.camera, target: activeHotspot.target }
@@ -391,10 +371,80 @@ function Scene({
         maxPolarAngle={Math.PI / 2.05}
         enableDamping
         dampingFactor={0.08}
+        onChange={() => invalidate()}
+        onStart={() => invalidate()}
+        end={() => invalidate()}
       />
 
       <CameraRig target={target} controlsRef={controlsRef} />
     </>
+  );
+}
+
+// ----- Lazy 3D canvas wrapper — only mounts when scrolled into view -----
+function Lazy3DCanvas({
+  activeHotspot,
+  onTeleport,
+}: {
+  activeHotspot: Hotspot | null;
+  onTeleport: (h: Hotspot) => void;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [shouldMount, setShouldMount] = useState(false);
+  // Lazy init — determine DPR once on first render without an effect
+  const [dpr, setDpr] = useState<[number, number]>(() => {
+    if (typeof window === "undefined") return [1, 1.5];
+    const isMobile = window.innerWidth < 768;
+    return isMobile ? [1, 1] : [1, 1.5];
+  });
+  // setDpr is kept for potential future responsive updates but currently unused
+  void setDpr;
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setShouldMount(true);
+            observer.disconnect();
+          }
+        }
+      },
+      { rootMargin: "200px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={wrapRef}
+      className="mt-10 relative rounded-2xl overflow-hidden border border-ohho-gold/20 bg-gradient-to-b from-[#1a1005] to-[#0a0703] h-[60vh] sm:h-[70vh]"
+    >
+      {shouldMount ? (
+        <Canvas
+          shadows
+          frameloop="demand"
+          dpr={dpr}
+          camera={{ position: [0, 2, 5], fov: 50 }}
+          gl={{ antialias: true, powerPreference: "high-performance" }}
+          className="tour-cursor-grab active:tour-cursor-grabbing"
+        >
+          <Suspense fallback={null}>
+            <Scene activeHotspot={activeHotspot} onTeleport={onTeleport} />
+          </Suspense>
+        </Canvas>
+      ) : (
+        <div className="absolute inset-0 grid place-items-center text-ohho-cream-dim">
+          <div className="text-center">
+            <Move3d className="h-10 w-10 mx-auto mb-3 text-ohho-gold/50 animate-pulse" />
+            <div className="text-sm">Loading 3D tour…</div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -454,18 +504,11 @@ export function VirtualTour3D() {
           </div>
         </div>
 
-        {/* 3D Canvas */}
-        <div className="mt-10 relative rounded-2xl overflow-hidden border border-ohho-gold/20 bg-gradient-to-b from-[#1a1005] to-[#0a0703] h-[60vh] sm:h-[70vh]">
-          <Canvas
-            shadows
-            camera={{ position: [0, 2, 5], fov: 50 }}
-            gl={{ antialias: true }}
-            className="tour-cursor-grab active:tour-cursor-grabbing"
-          >
-            <Suspense fallback={null}>
-              <Scene activeHotspot={activeHotspot} onTeleport={onTeleport} />
-            </Suspense>
-          </Canvas>
+        {/* 3D Canvas — lazy-mounted only when scrolled into view */}
+        <Lazy3DCanvas
+          activeHotspot={activeHotspot}
+          onTeleport={onTeleport}
+        />
 
           {/* Top-left overlay: drag hint */}
           <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-ohho-black/70 backdrop-blur text-ohho-cream text-[11px] uppercase tracking-wider flex items-center gap-2 border border-ohho-gold/20 pointer-events-none">
@@ -520,7 +563,6 @@ export function VirtualTour3D() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
 
         {/* Below-canvas hint row */}
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">

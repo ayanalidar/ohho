@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Flame, Clock, Star, ShoppingCart } from "lucide-react";
 import { menuItems, type MenuItem } from "@/data/menu";
@@ -8,105 +8,16 @@ import { useCart } from "@/store/cart";
 import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
-const ZOOM = 4; // 4x magnifier
-const LENS_SIZE = 180; // px diameter
-
-function MagnifierImage({ item }: { item: MenuItem }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [lens, setLens] = useState<{
-    show: boolean;
-    x: number;
-    y: number;
-    bgWidth: number;
-  }>({ show: false, x: 0, y: 0, bgWidth: 0 });
-  const [imgLoaded, setImgLoaded] = useState(false);
-
-  const onMove = useCallback((e: React.MouseEvent) => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setLens({ show: true, x, y, bgWidth: rect.width * ZOOM });
-  }, []);
-
-  const onLeave = useCallback(() => setLens((s) => ({ ...s, show: false })), []);
-
-  // Background position inside the lens so the lens shows the 4x-zoomed area under cursor
-  const bgX = -(lens.x * ZOOM - LENS_SIZE / 2);
-  const bgY = -(lens.y * ZOOM - LENS_SIZE / 2);
-
-  return (
-    <div
-      ref={wrapRef}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-      className="relative aspect-[4/3] overflow-hidden rounded-lg bg-ohho-black-light cursor-zoom-in group/img"
-    >
-      <img
-        src={item.image}
-        alt={item.name}
-        onLoad={() => setImgLoaded(true)}
-        className={cn(
-          "h-full w-full object-cover transition-all duration-700",
-          imgLoaded ? "opacity-100" : "opacity-0",
-          lens.show ? "scale-[1.04]" : "scale-100"
-        )}
-        draggable={false}
-      />
-
-      {/* Magnifier lens */}
-      <div
-        className="absolute pointer-events-none rounded-full transition-opacity duration-200"
-        style={{
-          width: LENS_SIZE,
-          height: LENS_SIZE,
-          left: 0,
-          top: 0,
-          transform: `translate(${lens.x - LENS_SIZE / 2}px, ${lens.y - LENS_SIZE / 2}px)`,
-          opacity: lens.show ? 1 : 0,
-          backgroundImage: `url(${item.image})`,
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: `${bgX}px ${bgY}px`,
-          backgroundSize: `${lens.bgWidth}px auto`,
-          boxShadow: "0 0 0 3px rgba(255, 193, 7, 0.85), 0 0 0 6px rgba(14, 10, 4, 0.85), 0 14px 50px rgba(0,0,0,0.6)",
-          backgroundColor: "#0e0a04",
-        }}
-      >
-        {/* inner ring */}
-        <div className="absolute inset-2 rounded-full border border-ohho-gold/30" />
-        {/* crosshair */}
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="h-3 w-3 rounded-full border border-ohho-gold/70 bg-ohho-orange/30 backdrop-blur-sm" />
-        </div>
-        {/* "4×" label */}
-        <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-ohho-orange text-ohho-black text-[10px] font-bold tracking-wider">
-          4× ZOOM
-        </div>
-      </div>
-
-      {/* Top-right chip when not hovering */}
-      <div
-        className={cn(
-          "absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase transition-opacity duration-200",
-          "bg-ohho-black/70 backdrop-blur text-ohho-gold border border-ohho-gold/30",
-          lens.show ? "opacity-0" : "opacity-100"
-        )}
-      >
-        Hover × 4
-      </div>
-    </div>
-  );
-}
-
 export function MenuMagnifier() {
   const [activeTag, setActiveTag] = useState<string>("All");
   const add = useCart((s) => s.add);
   const { navigate } = useNav();
 
-  const tags = useMemo(() => ["All", "Signature", "Bestseller", "Trending"], []);
+  const tags = useMemo(() => ["All", "Signature", "Bestseller", "Trending", "Veg", "Spicy"], []);
   const filtered = useMemo(() => {
     if (activeTag === "All") return menuItems;
+    if (activeTag === "Veg") return menuItems.filter((m) => m.tag === "Veg");
+    if (activeTag === "Spicy") return menuItems.filter((m) => m.spice >= 3);
     return menuItems.filter((m) => m.tag === activeTag);
   }, [activeTag]);
 
@@ -121,15 +32,15 @@ export function MenuMagnifier() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-orange/10 border border-ohho-orange/30 text-ohho-orange text-xs font-semibold tracking-wider uppercase">
               <Plus className="h-3.5 w-3.5" />
-              Follow-Cursor Magnifier
+              Full Menu
             </div>
             <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
-              The Menu, <span className="text-gradient-ohho">up close.</span>
+              The Menu, <span className="text-gradient-ohho">end to end.</span>
             </h2>
             <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
-              Hover any dish to trigger the 4× magnifier — every crispy edge,
-              every molten center, every drizzle of sauce. We don&apos;t hide
-              what we serve. We zoom in on it.
+              Burgers, pizzas, sandwiches, buckets, sips &amp; add-ons — every
+              item, every price. Tap <strong className="text-ohho-gold">Add</strong> to
+              drop it in your cart, then head to Order Online to check out.
             </p>
           </div>
 
@@ -140,9 +51,9 @@ export function MenuMagnifier() {
                 key={t}
                 onClick={() => setActiveTag(t)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-semibold border transition-all",
+                  "px-4 py-2 rounded-full text-sm font-semibold border transition-colors",
                   activeTag === t
-                    ? "bg-ohho-orange text-ohho-black border-ohho-orange shadow-lg shadow-ohho-orange/30"
+                    ? "bg-ohho-orange text-ohho-black border-ohho-orange"
                     : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50 hover:text-ohho-gold"
                 )}
               >
@@ -152,20 +63,24 @@ export function MenuMagnifier() {
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Grid — clean static cards, no magnifier */}
         <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((item, i) => (
             <motion.article
               key={item.id}
-              layout
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: (i % 3) * 0.06 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.35, delay: (i % 3) * 0.05 }}
               className="glass-card glass-card-hover rounded-2xl p-5 flex flex-col"
             >
-              <div className="mb-4">
-                <MagnifierImage item={item} />
+              <div className="mb-4 aspect-[4/3] overflow-hidden rounded-lg bg-ohho-black-light">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                />
               </div>
 
               <div className="flex items-start justify-between gap-3">
@@ -182,17 +97,19 @@ export function MenuMagnifier() {
                       {item.prepTime}
                     </span>
                     <span>{item.kcal} kcal</span>
-                    <span className="inline-flex items-center gap-0.5">
-                      {Array.from({ length: 3 }).map((_, s) => (
-                        <Flame
-                          key={s}
-                          className={cn(
-                            "h-3 w-3",
-                            s < item.spice ? "text-ohho-red fill-ohho-red/50" : "text-ohho-cream/15"
-                          )}
-                        />
-                      ))}
-                    </span>
+                    {item.spice > 0 && (
+                      <span className="inline-flex items-center gap-0.5">
+                        {Array.from({ length: 3 }).map((_, s) => (
+                          <Flame
+                            key={s}
+                            className={cn(
+                              "h-3 w-3",
+                              s < item.spice ? "text-ohho-red fill-ohho-red/50" : "text-ohho-cream/15"
+                            )}
+                          />
+                        ))}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {item.tag && (
@@ -246,9 +163,17 @@ export function MenuMagnifier() {
         </div>
 
         {/* Hint footer */}
-        <div className="mt-10 flex items-center justify-center gap-2 text-xs text-ohho-cream-dim">
-          <Star className="h-3.5 w-3.5 text-ohho-gold" />
-          Hover any dish image to trigger the 4× follow-cursor magnifier lens.
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-ohho-cream-dim">
+          <span className="inline-flex items-center gap-2">
+            <Star className="h-3.5 w-3.5 text-ohho-gold" />
+            Tap Add to drop items in your cart.
+          </span>
+          <button
+            onClick={() => navigate("order")}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 font-semibold hover:bg-ohho-orange/25 transition-colors"
+          >
+            Go to Order Online →
+          </button>
         </div>
       </div>
     </section>

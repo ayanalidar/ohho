@@ -9,32 +9,38 @@ import { cn } from "@/lib/utils";
 
 export function GenreTimeline() {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const { navigate } = useNav();
   const [progress, setProgress] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
   const updateProgress = useCallback(() => {
+    rafRef.current = null;
     const el = scrollerRef.current;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
     const p = max <= 0 ? 0 : el.scrollLeft / max;
-    setProgress(p);
     const cardWidth = el.scrollWidth / categories.length;
     const idx = Math.min(
       categories.length - 1,
       Math.max(0, Math.round(el.scrollLeft / cardWidth))
     );
+    setProgress(p);
     setActiveIdx(idx);
   }, []);
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.addEventListener("scroll", updateProgress, { passive: true });
+    const onScroll = () => {
+      if (rafRef.current == null) rafRef.current = requestAnimationFrame(updateProgress);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
     const raf = requestAnimationFrame(updateProgress);
     return () => {
-      el.removeEventListener("scroll", updateProgress);
+      el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
   }, [updateProgress]);
 

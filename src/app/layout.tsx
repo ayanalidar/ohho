@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anton, Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { PWAInstaller } from "@/components/ohho/PWAInstaller";
 
 const anton = Anton({
   variable: "--font-anton",
@@ -37,9 +38,24 @@ export const metadata: Metadata = {
     "online food ordering",
   ],
   authors: [{ name: "OHHO Food Ventures" }],
+  manifest: "/manifest.json",
+  applicationName: "OHHO BURGERS",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "OHHO BURGERS",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: "/ohho-images/favicon.png",
-    apple: "/ohho-images/ohho-logo.png",
+    icon: [
+      { url: "/ohho-images/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/ohho-images/ohho-logo-sm.png", sizes: "128x128", type: "image/png" },
+      { url: "/ohho-images/ohho-logo.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/ohho-images/ohho-logo.png", sizes: "512x512", type: "image/png" }],
+    shortcut: "/ohho-images/favicon.png",
   },
   openGraph: {
     title: "OHHO BURGERS — Live Premium",
@@ -50,6 +66,15 @@ export const metadata: Metadata = {
     type: "website",
     images: [{ url: "/ohho-images/ohho-logo-full.png", width: 1024, height: 493, alt: "OHHO BURGERS" }],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ff6a00",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -64,6 +89,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+        <PWAInstaller />
       </body>
     </html>
   );
