@@ -72,9 +72,12 @@ function downloadInvoice(order: Order, userName: string, userEmail: string) {
   <style>
     body { font-family: -apple-system, system-ui, sans-serif; background: #f5e6cc; padding: 40px; color: #0e0a04; }
     .card { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 40px rgba(14,10,4,0.15); }
-    .head { background: linear-gradient(135deg, #ff6a00, #d92626); color: #fff; padding: 28px 32px; }
-    .head h1 { margin: 0; font-size: 28px; letter-spacing: 0.04em; }
-    .head .sub { opacity: 0.85; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 4px; }
+    .head { background: linear-gradient(135deg, #ff6a00, #d92626); color: #fff; padding: 28px 32px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .head .brand { display:flex; align-items:center; gap:14px; }
+    .head .brand-mark { width:48px; height:48px; border-radius:10px; background:#fff; display:grid; place-items:center; font-size:24px; font-weight:900; color:#ff6a00; letter-spacing:-0.02em; }
+    .head h1 { margin: 0; font-size: 24px; letter-spacing: 0.04em; }
+    .head .sub { opacity: 0.85; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 4px; }
+    .head .invoice-tag { text-align:right; font-size:11px; opacity:0.9; letter-spacing:0.1em; text-transform:uppercase; }
     .body { padding: 24px 32px; }
     table { width: 100%; border-collapse: collapse; margin: 16px 0; }
     th { background: #faf3e6; padding: 10px 8px; text-align: left; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b5b3a; }
@@ -89,8 +92,17 @@ function downloadInvoice(order: Order, userName: string, userEmail: string) {
   <body>
     <div class="card">
       <div class="head">
-        <h1>OHHO BURGERS</h1>
-        <div class="sub">Live Premium · Tax Invoice</div>
+        <div class="brand">
+          <div class="brand-mark">O</div>
+          <div>
+            <h1>OHHO BURGERS</h1>
+            <div class="sub">Live Premium · Tax Invoice</div>
+          </div>
+        </div>
+        <div class="invoice-tag">
+          <div><b>Invoice</b></div>
+          <div>${order.invoiceNumber || "—"}</div>
+        </div>
       </div>
       <div class="body">
         <div class="meta">

@@ -38,7 +38,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "OHHO Food Ventures" }],
   icons: {
-    icon: "https://www.ohhofoods.com/assets/logo-D2O7IJJE.png",
+    icon: "/ohho-images/favicon.png",
+    apple: "/ohho-images/ohho-logo.png",
   },
   openGraph: {
     title: "OHHO BURGERS — Live Premium",
@@ -47,6 +48,7 @@ export const metadata: Metadata = {
     url: "https://www.ohhofoods.com",
     siteName: "OHHO BURGERS",
     type: "website",
+    images: [{ url: "/ohho-images/ohho-logo-full.png", width: 1024, height: 493, alt: "OHHO BURGERS" }],
   },
 };
 

@@ -53,18 +53,12 @@ export function Nav({
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Logo */}
-          <a href="#hero" className="flex items-center gap-2 group">
-            <div className="h-9 w-9 rounded-md bg-gradient-to-br from-ohho-orange to-ohho-red grid place-items-center font-display text-ohho-black text-xl leading-none shadow-lg shadow-ohho-orange/30">
-              O
-            </div>
-            <div className="leading-none">
-              <div className="font-display text-xl sm:text-2xl tracking-wider text-ohho-cream group-hover:text-ohho-gold transition-colors">
-                OHHO BURGERS
-              </div>
-              <div className="text-[10px] tracking-[0.35em] text-ohho-gold/80 uppercase">
-                Live Premium
-              </div>
-            </div>
+          <a href="#hero" className="flex items-center gap-2.5 group">
+            <img
+              src="/ohho-images/ohho-logo-full.png"
+              alt="OHHO BURGERS — Live Premium"
+              className="h-10 sm:h-12 w-auto object-contain transition-opacity group-hover:opacity-90"
+            />
           </a>
 
           {/* Desktop nav */}

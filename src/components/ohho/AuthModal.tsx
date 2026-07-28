@@ -90,9 +90,11 @@ export function AuthModal({
 
             {/* Header */}
             <div className="text-center">
-              <div className="h-12 w-12 mx-auto rounded-xl bg-gradient-to-br from-ohho-orange to-ohho-red grid place-items-center font-display text-ohho-black text-2xl">
-                O
-              </div>
+              <img
+                src="/ohho-images/ohho-logo-full.png"
+                alt="OHHO BURGERS"
+                className="h-14 w-auto mx-auto object-contain"
+              />
               <h2 className="mt-4 font-display text-2xl text-ohho-cream">
                 {mode === "signup" ? "Create your account" : "Welcome back"}
               </h2>

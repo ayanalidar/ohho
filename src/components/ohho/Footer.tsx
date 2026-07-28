@@ -11,20 +11,12 @@ export function Footer() {
         <div className="grid lg:grid-cols-12 gap-10">
           {/* Brand block */}
           <div className="lg:col-span-4">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-md bg-gradient-to-br from-ohho-orange to-ohho-red grid place-items-center font-display text-ohho-black text-2xl leading-none">
-                O
-              </div>
-              <div className="leading-none">
-                <div className="font-display text-2xl tracking-wider text-ohho-cream">
-                  OHHO BURGERS
-                </div>
-                <div className="text-[10px] tracking-[0.35em] text-ohho-gold/80 uppercase mt-0.5">
-                  Live Premium
-                </div>
-              </div>
-            </div>
-            <p className="mt-5 text-sm text-ohho-cream/70 leading-relaxed max-w-md">
+            <img
+              src="/ohho-images/ohho-logo-full.png"
+              alt="OHHO BURGERS — Live Premium"
+              className="h-14 w-auto object-contain mb-5"
+            />
+            <p className="text-sm text-ohho-cream/70 leading-relaxed max-w-md">
               A new-age premium QSR brand by{" "}
               <span className="text-ohho-gold font-semibold">
                 OHHO Food Ventures
