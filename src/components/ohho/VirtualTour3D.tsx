@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Environment, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Html, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
 import { Move3d, MapPin, Info, X } from "lucide-react";
@@ -257,7 +257,7 @@ function HotspotMarker({
         <button
           onClick={() => onTeleport(hotspot)}
           className={cn(
-            "px-3 py-1.5 rounded-full whitespace-nowrap text-[11px] font-bold uppercase tracking-wider transition-all -translate-y-8 backdrop-blur-md border",
+            "px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all -translate-y-8 backdrop-blur-md border max-w-[100px] sm:max-w-none truncate",
             isActive
               ? "bg-ohho-orange text-ohho-black border-ohho-gold shadow-lg shadow-ohho-orange/40 scale-110"
               : "bg-ohho-black/70 text-ohho-cream border-ohho-gold/40 hover:bg-ohho-orange/20 hover:border-ohho-gold"
@@ -359,7 +359,7 @@ function Scene({
         far={6}
       />
 
-      <Environment preset="sunset" />
+      {/* Environment preset removed — was fetching 1-4MB HDRI from CDN. Using lighting only. */}
 
       <OrbitControls
         ref={controlsRef}

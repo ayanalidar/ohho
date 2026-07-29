@@ -1,29 +1,40 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { AuthProvider } from "@/components/ohho/AuthProvider";
 import { NavContext, type NavTarget } from "@/components/ohho/nav-context";
 import { Nav } from "@/components/ohho/Nav";
 import { HeroSpotlight } from "@/components/ohho/HeroSpotlight";
-import { AboutVentures } from "@/components/ohho/AboutVentures";
-import { MenuMagnifier } from "@/components/ohho/MenuMagnifier";
 import { GenreTimeline } from "@/components/ohho/GenreTimeline";
-import { VirtualTour3D } from "@/components/ohho/VirtualTour3D";
 import { OrderingPlatform } from "@/components/ohho/OrderingPlatform";
 import { LiveKitchenView } from "@/components/ohho/LiveKitchenView";
 import { RewardsSection } from "@/components/ohho/RewardsSection";
-import { FranchiseTab } from "@/components/ohho/FranchiseTab";
-import { CateringTab } from "@/components/ohho/CateringTab";
 import { Footer } from "@/components/ohho/Footer";
-import { AuthModal } from "@/components/ohho/AuthModal";
-import { UserDashboard } from "@/components/ohho/UserDashboard";
-import { AdminPanel } from "@/components/ohho/AdminPanel";
 import { StandalonePageBar } from "@/components/ohho/StandalonePageBar";
 import {
   TodaySpecialBanner, LiveOrderTicker, LocationPicker,
   AchievementBadges, CustomerPhotoWall, CountdownTimer,
 } from "@/components/ohho/HomeFeatures";
 import { AnimatePresence, motion } from "framer-motion";
+
+// Lazy-load heavy components that aren't needed on initial render
+const VirtualTour3D = dynamic(() => import("@/components/ohho/VirtualTour3D").then(m => m.VirtualTour3D), {
+  ssr: false,
+  loading: () => (
+    <div className="py-20 text-center text-ohho-cream-dim">
+      <div className="h-16 w-16 mx-auto rounded-full border-2 border-ohho-gold/30 border-t-ohho-orange animate-spin mb-3" />
+      Loading 3D tour…
+    </div>
+  ),
+});
+const AboutVentures = dynamic(() => import("@/components/ohho/AboutVentures").then(m => m.AboutVentures));
+const MenuMagnifier = dynamic(() => import("@/components/ohho/MenuMagnifier").then(m => m.MenuMagnifier));
+const FranchiseTab = dynamic(() => import("@/components/ohho/FranchiseTab").then(m => m.FranchiseTab));
+const CateringTab = dynamic(() => import("@/components/ohho/CateringTab").then(m => m.CateringTab));
+const AuthModal = dynamic(() => import("@/components/ohho/AuthModal").then(m => m.AuthModal), { ssr: false });
+const UserDashboard = dynamic(() => import("@/components/ohho/UserDashboard").then(m => m.UserDashboard), { ssr: false });
+const AdminPanel = dynamic(() => import("@/components/ohho/AdminPanel").then(m => m.AdminPanel), { ssr: false });
 
 type View = "home" | "company" | "menu" | "order" | "franchise" | "catering";
 

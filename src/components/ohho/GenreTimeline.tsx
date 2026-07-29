@@ -139,7 +139,8 @@ export function GenreTimeline() {
               }}
             />
             {categories.map((c, i) => {
-              const pos = (i / (categories.length - 1)) * 100;
+              // Clamp first and last positions to avoid clipping
+              const pos = i === 0 ? 4 : i === categories.length - 1 ? 96 : (i / (categories.length - 1)) * 100;
               const reached = i <= activeIdx;
               return (
                 <button

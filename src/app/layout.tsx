@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Manrope, Geist_Mono } from "next/font/google";
+import { Anton, Manrope } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PWAInstaller } from "@/components/ohho/PWAInstaller";
@@ -9,19 +9,15 @@ const anton = Anton({
   subsets: ["latin"],
   weight: "400",
   display: "swap",
+  preload: true,
 });
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "600", "700"],
   display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -85,7 +81,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${anton.variable} ${manrope.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${anton.variable} ${manrope.variable} antialiased bg-background text-foreground`}
       >
         {children}
         <Toaster />

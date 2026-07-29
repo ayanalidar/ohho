@@ -402,7 +402,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {addOns.map((a) => (
                       <button
                         key={a.id}
@@ -601,7 +601,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                     <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-1.5">
                       Payment method
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {PAYMENT_METHODS.map((m) => {
                         const Icon = m.icon;
                         return (

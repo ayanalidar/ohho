@@ -333,7 +333,7 @@ export function Nav({
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => setQty(line.item.id, line.qty - 1)}
-                      className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+                      className="h-9 w-9 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="h-3 w-3" />
@@ -343,14 +343,14 @@ export function Nav({
                     </span>
                     <button
                       onClick={() => setQty(line.item.id, line.qty + 1)}
-                      className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+                      className="h-9 w-9 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => remove(line.item.id)}
-                      className="ml-auto h-6 w-6 grid place-items-center rounded text-ohho-red/70 hover:text-ohho-red hover:bg-ohho-red/10"
+                      className="ml-auto h-9 w-9 grid place-items-center rounded text-ohho-red/70 hover:text-ohho-red hover:bg-ohho-red/10"
                       aria-label="Remove item"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

@@ -608,28 +608,32 @@ function LiveOrderTracker({ order }: { order: Order }) {
       </div>
 
       {/* Stage timeline */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-start gap-1">
         {STAGES.map((s, i) => {
           const Icon = s.icon;
           const done = i <= stageIdx;
           const current = i === stageIdx;
           return (
-            <div key={s.id} className="flex-1 flex flex-col items-center gap-1.5">
+            <div key={s.id} className="flex-1 flex flex-col items-center relative">
+              {/* Connector line to next stage */}
+              {i < STAGES.length - 1 && (
+                <div
+                  className={cn("absolute top-4 left-1/2 w-full h-0.5", done ? "bg-ohho-orange" : "bg-ohho-cream/10")}
+                  style={{ zIndex: 0 }}
+                />
+              )}
               <div
-                className={cn("h-9 w-9 rounded-full grid place-items-center transition-all", current && "scale-110")}
+                className={cn("relative h-8 w-8 sm:h-9 sm:w-9 rounded-full grid place-items-center transition-all z-10", current && "scale-110")}
                 style={{
                   background: done ? `${s.color}22` : "rgba(245,230,204,0.05)",
                   border: `2px solid ${done ? s.color : "rgba(245,230,204,0.15)"}`,
                 }}
               >
-                <Icon className="h-4 w-4" style={{ color: done ? s.color : "rgba(245,230,204,0.3)" }} />
+                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: done ? s.color : "rgba(245,230,204,0.3)" }} />
               </div>
-              <div className={cn("text-[9px] text-center leading-tight", done ? "text-ohho-cream" : "text-ohho-cream-dim")}>
+              <div className={cn("text-[8px] sm:text-[9px] text-center leading-tight mt-1.5", done ? "text-ohho-cream" : "text-ohho-cream-dim")}>
                 {s.label}
               </div>
-              {i < STAGES.length - 1 && (
-                <div className={cn("absolute h-0.5 transition-colors", done ? "bg-ohho-orange" : "bg-ohho-cream/10")} style={{ width: "100%", left: "50%", top: "18px", zIndex: -1 }} />
-              )}
             </div>
           );
         })}

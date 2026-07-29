@@ -113,3 +113,67 @@ Two-part task:
 ### How to view
 
 Open the **Preview Panel** on the right → click **Open in New Tab** to view in a separate browser tab. Click the **Company** tab in the top nav to see the redesigned company page; resize the browser narrow (~375px) to verify mobile layouts.
+
+---
+
+## Task `audit-mobile-perf` — Mobile responsiveness + performance audit (research only)
+
+**Agent:** GLM (Explore)
+**Status:** ✅ Complete (audit only — no code changes)
+**Detailed report:** `/home/z/my-project/audit-report.md`
+
+### Summary
+
+Audited 13 OHHO storefront component files for mobile responsiveness (320–375 px) and the project's font / image / bundle / config setup for performance bottlenecks. All findings, line numbers, severities, and fix recommendations are documented in `audit-report.md`.
+
+### Files inspected
+
+| File | Purpose | Lines |
+|---|---|---|
+| `src/components/ohho/HeroSpotlight.tsx` | Hero section with cross-fading food imagery + spotlight effect | 277 |
+| `src/components/ohho/GenreTimeline.tsx` | Horizontal-scroll era cards with progress rail | 372 |
+| `src/components/ohho/VirtualTour3D.tsx` | Three.js food-cart tour with hotspot teleporting | 590 |
+| `src/components/ohho/OrderingPlatform.tsx` | Menu + cart sidebar + checkout + UPI modal | 870 |
+| `src/components/ohho/FranchiseTab.tsx` | 5-stage model + ROI calculator + application form | 328 |
+| `src/components/ohho/CateringTab.tsx` | Catering packages grid + inquiry form | 201 |
+| `src/components/ohho/LiveKitchenView.tsx` | Real-time 4-stage kitchen pipeline | 205 |
+| `src/components/ohho/RewardsSection.tsx` | 4 loyalty tiers with SVG progress rings | 296 |
+| `src/components/ohho/HomeFeatures.tsx` | 7 sub-components (TodaySpecialBanner, LiveOrderTicker, LocationPicker, AchievementBadges, CustomerPhotoWall, CountdownTimer, AnimatedCounter) | 419 |
+| `src/components/ohho/UserDashboard.tsx` | Slide-in drawer with Orders / Addresses / Wallet / Refer tabs | 698 |
+| `src/components/ohho/AdminPanel.tsx` | Slide-in drawer with 10 admin tabs | 685 |
+| `src/components/ohho/Nav.tsx` | Top nav + mobile menu + cart drawer | 392 |
+| `src/components/ohho/MenuMagnifier.tsx` | Full menu grid (read for image-loading pattern) | 227 |
+| `src/app/layout.tsx` | Font loading (Anton, Manrope, Geist_Mono) | 96 |
+| `src/app/page.tsx` | Top-level component wiring + view router | 149 |
+| `next.config.ts` | Next.js config | 12 |
+| `public/ohho-images/` | 23 PNG/JPEG assets (~2.5 MB total) | — |
+
+### Top findings (P0 critical)
+
+**Mobile (3 critical bugs + ~15 touch-target violations):**
+1. 🔴 `UserDashboard.tsx` LiveOrderTracker stage-timeline connector has broken `position: absolute` (no `relative` ancestor at line 617).
+2. 🔴 `GenreTimeline.tsx` progress-rail year labels at 0 % and 100 % clip off-screen on mobile.
+3. 🔴 `Nav.tsx` cart-drawer qty buttons are `h-6 w-6` (24 px) — far below any usable touch target.
+4. 🔴 `AdminPanel.tsx` order-status buttons are `py-1 text-[10px]` (~24 px tall) — admin-critical.
+5. 🟠 Many `h-10` (40 px) primary buttons across `Nav`, `VirtualTour3D`, `UserDashboard`, `AdminPanel` miss the 44 px iOS/Android touch-target guideline.
+6. 🟠 `OrderingPlatform` payment grid (`grid-cols-3` with 4 entries) and add-ons strip (`grid-cols-3` always) are cramped on 320 px.
+
+**Performance (2 structural issues):**
+1. 🔴 **Zero `next/image` adoption** — 14 raw `<img>` tags across 10 files, only 2 with `loading="lazy"`. Hero LCP image has no `priority` / `fetchpriority`. Nav logo is an 80 KB PNG.
+2. 🔴 **No code-splitting for heavy components** — `page.tsx` statically imports `VirtualTour3D` (Three.js ~600 KB gzip), `UserDashboard`, `AdminPanel`, `AuthModal`, plus all 12+ section components into one initial chunk. No `next/dynamic` usage anywhere.
+3. 🔴 `VirtualTour3D` uses `<Environment preset="sunset" />` — fetches 1–4 MB HDRI from CDN at runtime.
+4. 🟠 All 18 food images are 1024×1024 baseline JPEGs mis-named as `.png`, served at 100–177 KB each (~2.5 MB total).
+5. 🟡 `Geist_Mono` font loads all 7 weights (no `weight` array in `layout.tsx`).
+6. 🟡 `next.config.ts` has no `images.formats`, no `compiler.removeConsole`, and `typescript.ignoreBuildErrors: true` is set.
+
+### Expected impact of P0 fixes
+
+- **Initial JS payload:** ~40 % reduction (Three.js + modal components move to route-level chunks via `next/dynamic`).
+- **Initial image bytes:** ~50 % reduction (AVIF/WebP auto-conversion + responsive `srcset` via `next/image`).
+- **LCP:** ~1.5–2.5 s improvement on 4 G mobile (hero `priority` + logo compression + image format optimization).
+
+### Verification
+
+- `bun run lint` not run — this was a research-only task with no code changes.
+- All findings include exact file paths and line numbers in `audit-report.md`.
+- No files were modified.

@@ -494,7 +494,7 @@ function OrdersView({
                 key={s}
                 onClick={() => onStatusChange(order.id, s)}
                 className={cn(
-                  "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all",
+                  "px-2.5 py-1.5 min-h-[36px] rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all",
                   order.status === s
                     ? "text-ohho-black"
                     : "text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"
