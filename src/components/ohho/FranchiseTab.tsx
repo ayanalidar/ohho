@@ -71,21 +71,21 @@ export function FranchiseTab() {
 
   return (
     <div className="pt-[72px]">
-      <section className="relative py-20 sm:py-28 bg-ohho-black grain overflow-hidden">
-        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-ohho-orange/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-ohho-gold/10 blur-3xl" />
+      <section className="relative py-14 sm:py-16 bg-ohho-black grain overflow-hidden">
+        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-ohho-orange/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-ohho-gold/10 blur-3xl pointer-events-none" />
 
-        <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
           {/* Header */}
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-gold/10 border border-ohho-gold/30 text-ohho-gold text-xs font-semibold tracking-wider uppercase">
               <Building2 className="h-3.5 w-3.5" />
               Own an OHHO Franchise
             </div>
-            <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+            <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
               From cart to <span className="text-gradient-ohho">passive income.</span>
             </h2>
-            <p className="mt-4 text-ohho-cream/80 text-lg leading-relaxed">
+            <p className="mt-4 text-ohho-cream/80 text-base sm:text-lg leading-relaxed">
               We don&apos;t hand over unproven locations. We scout, build, operate, and
               prove the model ourselves — then offer the winning territory to you.
               Passive income, on a verified cash-flow asset.
@@ -93,7 +93,7 @@ export function FranchiseTab() {
           </div>
 
           {/* Stats */}
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
             {ohhoStats.map((s) => (
               <div key={s.label} className="glass-card rounded-xl p-5 text-center">
                 <div className="font-display text-4xl sm:text-5xl text-ohho-gold ohho-glow">
@@ -105,11 +105,11 @@ export function FranchiseTab() {
           </div>
 
           {/* Tested locations */}
-          <div className="mt-12">
-            <h3 className="font-display text-2xl sm:text-3xl text-ohho-cream mb-5">
+          <div className="mt-10">
+            <h3 className="font-display text-xl sm:text-2xl lg:text-3xl text-ohho-cream mb-5">
               Tested locations — operational
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {testedLocations.map((loc) => (
                 <div key={loc.city} className="glass-card glass-card-hover rounded-2xl overflow-hidden flex">
                   <div className="relative w-32 flex-shrink-0">
@@ -132,30 +132,30 @@ export function FranchiseTab() {
           </div>
 
           {/* 5-stage model */}
-          <div className="mt-16">
-            <h3 className="font-display text-2xl sm:text-3xl text-ohho-cream mb-8">
+          <div className="mt-12">
+            <h3 className="font-display text-xl sm:text-2xl lg:text-3xl text-ohho-cream mb-6 sm:mb-8">
               The 5-stage OHHO model
             </h3>
             <div className="relative">
               <div className="absolute left-[27px] top-2 bottom-2 w-px bg-gradient-to-b from-ohho-orange via-ohho-gold to-ohho-red/40" />
-              <ol className="space-y-6">
+              <ol className="space-y-5 sm:space-y-6">
                 {ventureStages.map((stage) => {
                   const Icon = ICONS[stage.icon] ?? Target;
                   return (
-                    <li key={stage.id} className="relative pl-20">
+                    <li key={stage.id} className="relative pl-16 sm:pl-20">
                       <div
-                        className="absolute left-0 top-0 h-14 w-14 rounded-xl grid place-items-center border-2"
+                        className="absolute left-0 top-0 h-12 w-12 sm:h-14 sm:w-14 rounded-xl grid place-items-center border-2"
                         style={{ backgroundColor: "rgba(14,10,4,0.9)", borderColor: stage.color, boxShadow: `0 0 0 4px rgba(14,10,4,1), 0 0 24px -2px ${stage.color}55` }}
                       >
-                        <Icon className="h-6 w-6" style={{ color: stage.color }} />
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: stage.color }} />
                       </div>
-                      <div className="glass-card glass-card-hover rounded-xl p-6">
+                      <div className="glass-card glass-card-hover rounded-xl p-4 sm:p-6">
                         <div className="flex items-baseline gap-3 flex-wrap">
-                          <span className="font-display text-3xl leading-none" style={{ color: stage.color }}>0{stage.id}</span>
-                          <h4 className="font-display text-2xl text-ohho-cream">{stage.title}</h4>
-                          <span className="ml-auto text-xs uppercase tracking-wider text-ohho-cream-dim">{stage.short}</span>
+                          <span className="font-display text-2xl sm:text-3xl leading-none" style={{ color: stage.color }}>0{stage.id}</span>
+                          <h4 className="font-display text-xl sm:text-2xl text-ohho-cream">{stage.title}</h4>
+                          <span className="ml-auto text-[10px] sm:text-xs uppercase tracking-wider text-ohho-cream-dim">{stage.short}</span>
                         </div>
-                        <p className="mt-4 text-ohho-cream/80 leading-relaxed">{stage.body}</p>
+                        <p className="mt-3 sm:mt-4 text-ohho-cream/80 leading-relaxed text-sm sm:text-base">{stage.body}</p>
                       </div>
                     </li>
                   );
@@ -165,7 +165,7 @@ export function FranchiseTab() {
           </div>
 
           {/* ROI Calculator + Application form */}
-          <div className="mt-16 grid lg:grid-cols-2 gap-6">
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* ROI Calculator */}
             <div className="glass-card rounded-2xl p-6">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-orange/10 border border-ohho-orange/30 text-ohho-orange text-xs font-semibold tracking-wider uppercase mb-4">
@@ -251,7 +251,7 @@ export function FranchiseTab() {
                     </p>
                     <button
                       onClick={() => { setSubmitted(false); setForm({ name: "", email: "", phone: "", city: "", locationType: "high-street", investment: "1.5-3L", timeline: "exploring", message: "" }); }}
-                      className="mt-5 px-5 py-2 rounded-md border border-ohho-gold/30 text-ohho-cream text-sm font-semibold hover:bg-ohho-gold/10"
+                      className="mt-5 h-11 px-5 rounded-md border border-ohho-gold/30 text-ohho-cream text-sm font-semibold hover:bg-ohho-gold/10"
                     >
                       Submit another
                     </button>
@@ -295,7 +295,7 @@ export function FranchiseTab() {
                       </div>
                     </div>
                     <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Tell us about yourself and your location (optional)" rows={3} className="w-full px-3 py-2.5 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 resize-none" />
-                    <button type="submit" disabled={submitting} className={cn("w-full py-3 rounded-md font-bold flex items-center justify-center gap-2 transition-all", submitting ? "bg-ohho-cream/10 text-ohho-cream-dim" : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-lg hover:shadow-ohho-orange/40")}>
+                    <button type="submit" disabled={submitting} className={cn("w-full h-12 rounded-md font-bold flex items-center justify-center gap-2 transition-all", submitting ? "bg-ohho-cream/10 text-ohho-cream-dim" : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-lg hover:shadow-ohho-orange/40")}>
                       {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <>Submit application <Send className="h-4 w-4" /></>}
                     </button>
                   </motion.form>
@@ -305,7 +305,7 @@ export function FranchiseTab() {
           </div>
 
           {/* Franchise package summary */}
-          <div className="mt-12 grid sm:grid-cols-3 gap-4">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
               { icon: Clock, label: "Setup time", value: "45 days" },
               { icon: Building2, label: "Space required", value: "50 – 150 sq. ft." },

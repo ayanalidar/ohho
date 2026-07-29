@@ -47,6 +47,7 @@
   --color-ohho-black-light: #1a1005;
   --color-ohho-cream: #f5e6cc;
   --color-ohho-cream-dim: #c9b890;
+  --color-ohho-green: #10b981;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

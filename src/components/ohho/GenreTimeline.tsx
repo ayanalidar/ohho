@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Clock, ChevronRight } from "lucide-react";
-import { categories, menuItems } from "@/data/menu";
+import { ArrowLeft, ArrowRight, Clock, ChevronRight, Loader2 } from "lucide-react";
+import { useTimelineEras, useMenuItems } from "@/hooks/use-content";
 import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,8 @@ export function GenreTimeline() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const { navigate } = useNav();
+  const { eras: categories, loading } = useTimelineEras();
+  const { items: menuItems } = useMenuItems();
   const [progress, setProgress] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -20,14 +22,14 @@ export function GenreTimeline() {
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
     const p = max <= 0 ? 0 : el.scrollLeft / max;
-    const cardWidth = el.scrollWidth / categories.length;
+    const cardWidth = el.scrollWidth / Math.max(1, categories.length);
     const idx = Math.min(
-      categories.length - 1,
+      Math.max(0, categories.length - 1),
       Math.max(0, Math.round(el.scrollLeft / cardWidth))
     );
     setProgress(p);
     setActiveIdx(idx);
-  }, []);
+  }, [categories.length]);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -51,13 +53,24 @@ export function GenreTimeline() {
     el.scrollBy({ left: dir * cardWidth, behavior: "smooth" });
   };
 
+  if (loading || categories.length === 0) {
+    return (
+      <section id="timeline" className="relative py-16 sm:py-20 bg-ohho-black-light overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12 text-center py-20 text-ohho-cream-dim">
+          <Loader2 className="h-8 w-8 mx-auto animate-spin mb-3" />
+          Loading timeline…
+        </div>
+      </section>
+    );
+  }
+
   const active = categories[activeIdx];
-  const activeItems = menuItems.filter((m) => m.category === active.id);
+  const activeItems = menuItems.filter((m: any) => m.category === active.category);
 
   return (
     <section
       id="timeline"
-      className="relative py-24 sm:py-32 bg-ohho-black-light overflow-hidden"
+      className="relative py-16 sm:py-20 bg-ohho-black-light overflow-hidden"
     >
       {/* Ambient color glow that follows active era */}
       <div
@@ -65,7 +78,7 @@ export function GenreTimeline() {
         style={{ background: active.color }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="max-w-2xl">
@@ -73,10 +86,10 @@ export function GenreTimeline() {
               <Clock className="h-3.5 w-3.5" />
               The Menu Story — Horizontal Scroll Timeline
             </div>
-            <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+            <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
               Six genres. <span className="text-gradient-ohho">Six chapters.</span>
             </h2>
-            <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+            <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
               From the first burger in Kairana ({categories[0].year}) to the latest add-on line ({categories[categories.length - 1].year}).
               Scroll horizontally to walk through OHHO&apos;s menu story — each chapter
               is a genre, each genre is an era.
@@ -116,7 +129,7 @@ export function GenreTimeline() {
         </div>
 
         {/* Top progress rail with markers */}
-        <div className="mt-10 relative">
+        <div className="mt-8 relative">
           <div className="relative h-1 rounded-full bg-ohho-cream/10">
             <div
               className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
@@ -169,16 +182,16 @@ export function GenreTimeline() {
         {/* Horizontal scroll cards */}
         <div
           ref={scrollerRef}
-          className="mt-16 flex gap-6 overflow-x-auto snap-x-mandatory ohho-scroll ohho-scroll-x pb-6 px-1 scroll-pl-1"
+          className="mt-12 sm:mt-16 flex gap-4 sm:gap-6 overflow-x-auto snap-x-mandatory ohho-scroll ohho-scroll-x pb-6 px-1 scroll-pl-1"
           style={{ scrollbarWidth: "thin" }}
         >
           {categories.map((cat, i) => {
-            const items = menuItems.filter((m) => m.category === cat.id);
+            const items = menuItems.filter((m) => m.category === cat.category);
             const isActive = i === activeIdx;
             const heroItem = items[0];
             return (
               <article
-                key={cat.id}
+                key={cat.category}
                 className="snap-center flex-shrink-0 w-[88vw] sm:w-[560px] lg:w-[640px] relative"
               >
                 <div
@@ -317,9 +330,9 @@ export function GenreTimeline() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.4 }}
-            className="mt-10 p-6 rounded-2xl glass-card"
+            className="mt-8 p-5 sm:p-6 rounded-2xl glass-card"
           >
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="text-2xl">{active.emoji}</span>
               <h3 className="font-display text-2xl text-ohho-cream">
                 {active.year} · {active.label}
@@ -335,7 +348,7 @@ export function GenreTimeline() {
                 Chapter {activeIdx + 1} of {categories.length}
               </span>
             </div>
-            <p className="text-ohho-cream/75 leading-relaxed">
+            <p className="text-ohho-cream/75 leading-relaxed text-sm sm:text-base">
               {active.blurb}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">

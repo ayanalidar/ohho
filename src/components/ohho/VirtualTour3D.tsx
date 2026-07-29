@@ -461,9 +461,9 @@ export function VirtualTour3D() {
   return (
     <section
       id="tour"
-      className="relative py-24 sm:py-32 bg-ohho-black grain overflow-hidden"
+      className="relative py-16 sm:py-20 bg-ohho-black grain overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="max-w-2xl">
@@ -471,10 +471,10 @@ export function VirtualTour3D() {
               <Move3d className="h-3.5 w-3.5" />
               Drag-to-Look 3D Virtual Tour
             </div>
-            <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+            <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
               Step inside an <span className="text-gradient-ohho">OHHO cart.</span>
             </h2>
-            <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+            <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
               Drag with your mouse or finger to look around. Click any glowing
               hotspot to teleport to that part of the cart — counter, grill,
               brand sign, or storage. Every cart is fabricated by OHHO Food
@@ -488,7 +488,7 @@ export function VirtualTour3D() {
                 key={h.id}
                 onClick={() => onTeleport(h)}
                 className={cn(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-semibold transition-all",
+                  "inline-flex items-center gap-2 h-9 px-3 rounded-md border text-xs font-semibold transition-all",
                   activeHotspot?.id === h.id
                     ? "bg-ohho-orange text-ohho-black border-ohho-gold"
                     : "bg-ohho-black/40 text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/60 hover:text-ohho-gold"
@@ -533,13 +533,13 @@ export function VirtualTour3D() {
                 style={{ borderColor: `${activeHotspot.color}55` }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <MapPin
-                      className="h-4 w-4"
+                      className="h-4 w-4 flex-shrink-0"
                       style={{ color: activeHotspot.color }}
                     />
                     <div
-                      className="font-display text-xl"
+                      className="font-display text-lg sm:text-xl truncate"
                       style={{ color: activeHotspot.color }}
                     >
                       {activeHotspot.label}
@@ -548,7 +548,7 @@ export function VirtualTour3D() {
                   <button
                     onClick={() => setInfoOpen(false)}
                     aria-label="Close info"
-                    className="h-7 w-7 grid place-items-center rounded-md text-ohho-cream-dim hover:text-ohho-cream hover:bg-ohho-orange/10"
+                    className="h-9 w-9 grid place-items-center rounded-md text-ohho-cream-dim hover:text-ohho-cream hover:bg-ohho-orange/10 flex-shrink-0"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -570,7 +570,7 @@ export function VirtualTour3D() {
             <button
               key={h.id}
               onClick={() => onTeleport(h)}
-              className="text-left p-3 rounded-lg glass-card glass-card-hover"
+              className="text-left p-3 rounded-lg glass-card glass-card-hover min-h-[88px]"
             >
               <div
                 className="font-display text-lg"

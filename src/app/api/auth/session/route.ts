@@ -12,18 +12,19 @@ export async function GET() {
     // Refresh loyalty points from DB
     const dbUser = await db.user.findUnique({
       where: { id: payload.id },
-      select: { loyaltyPoints: true, role: true, name: true, email: true, walletBalance: true, referralCode: true, phone: true },
+      select: { loyaltyPoints: true, role: true, name: true, email: true, walletBalance: true, referralCode: true, phone: true, locationId: true },
     });
     if (!dbUser) return NextResponse.json({ user: null });
     const user: SessionUser = {
       id: payload.id,
       email: dbUser.email,
       name: dbUser.name,
-      role: dbUser.role as "CUSTOMER" | "ADMIN",
+      role: dbUser.role as "CUSTOMER" | "ADMIN" | "OPERATOR",
       loyaltyPoints: dbUser.loyaltyPoints,
       walletBalance: dbUser.walletBalance,
       referralCode: dbUser.referralCode,
       phone: dbUser.phone,
+      locationId: dbUser.locationId,
     };
     return NextResponse.json({ user });
   } catch (e: any) {

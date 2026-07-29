@@ -1,0 +1,863 @@
+     1→"use client";
+     2→
+     3→import { useMemo, useState } from "react";
+     4→import { motion, AnimatePresence } from "framer-motion";
+     5→import {
+     6→  CheckCircle2,
+     7→  Clock,
+     8→  Flame,
+     9→  MapPin,
+    10→  ShoppingBag,
+    11→  Truck,
+    12→  CreditCard,
+    13→  Wallet,
+    14→  Banknote,
+    15→  Sparkles,
+    16→  Loader2,
+    17→  X,
+    18→  Plus,
+    19→  Minus,
+    20→  Trash2,
+    21→  ArrowRight,
+    22→} from "lucide-react";
+    23→import { menuItems, categories, type MenuItem, ohhoLocations } from "@/data/menu";
+    24→import { useCart, cartSubtotal, cartCount } from "@/store/cart";
+    25→import { useAuth } from "@/components/ohho/AuthProvider";
+    26→import { useNav } from "@/components/ohho/nav-context";
+    27→import { cn } from "@/lib/utils";
+    28→
+    29→const PAYMENT_METHODS = [
+    30→  { id: "upi", label: "UPI / QR", icon: Wallet },
+    31→  { id: "wallet", label: "OHHO Wallet", icon: Wallet },
+    32→  { id: "card", label: "Credit / Debit", icon: CreditCard },
+    33→  { id: "cod", label: "Cash on Delivery", icon: Banknote },
+    34→];
+    35→
+    36→type Placed = { orderId: string; invoiceNumber: string; earnedPoints: number };
+    37→
+    38→export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void }) {
+    39→  const [cat, setCat] = useState<string>("Burgers");
+    40→  const [placed, setPlaced] = useState<Placed | null>(null);
+    41→  const [pay, setPay] = useState("upi");
+    42→  const [mode, setMode] = useState<"delivery" | "pickup">("delivery");
+    43→  const [address, setAddress] = useState("");
+    44→  const [notes, setNotes] = useState("");
+    45→  const [locationId, setLocationId] = useState<string>(ohhoLocations[0]?.id || "kairana");
+    46→  const [useWallet, setUseWallet] = useState(false);
+    47→  const [showUpiModal, setShowUpiModal] = useState(false);
+    48→  const [upiData, setUpiData] = useState<any>(null);
+    49→  const [placing, setPlacing] = useState(false);
+    50→  const [addOnModal, setAddOnModal] = useState<MenuItem | null>(null);
+    51→  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, string[]>>({});
+    52→
+    53→  const { lines, add, setQty, remove, clear, close: closeCart } = useCart();
+    54→  const { user, refresh } = useAuth();
+    55→  const { navigate } = useNav();
+    56→  const subtotal = cartSubtotal(lines);
+    57→  const count = cartCount(lines);
+    58→  const deliveryFee = mode === "delivery" && subtotal > 0 ? (subtotal > 400 ? 0 : 39) : 0;
+    59→  const taxes = Math.round(subtotal * 0.05);
+    60→  const grossTotal = subtotal + deliveryFee + taxes;
+    61→  const walletBalanceRupees = user ? user.walletBalance / 100 : 0;
+    62→  const walletDebit = useWallet ? Math.min(walletBalanceRupees, grossTotal) : 0;
+    63→  const total = grossTotal - walletDebit;
+    64→
+    65→  const items = useMemo(
+    66→    () => menuItems.filter((m) => m.category === cat && !m.isAddOn),
+    67→    [cat]
+    68→  );
+    69→  const addOns = useMemo(() => menuItems.filter((m) => m.isAddOn), []);
+    70→
+    71→  const placeOrder = async () => {
+    72→    if (lines.length === 0) return;
+    73→    if (!user) {
+    74→      onRequireAuth();
+    75→      return;
+    76→    }
+    77→    if (mode === "delivery" && !address.trim()) {
+    78→      return;
+    79→    }
+    80→    // For UPI payment: show QR modal first, create order after "I've Paid" confirmation
+    81→    if (pay === "upi" && !showUpiModal) {
+    82→      // Close cart drawer so it doesn't cover the UPI modal
+    83→      closeCart();
+    84→      // Fetch UPI intent + QR
+    85→      try {
+    86→        const tempOrderId = "OHHO-PREVIEW-" + Date.now().toString(36).toUpperCase();
+    87→        const res = await fetch(`/api/upi-payment?amount=${total}&orderId=${tempOrderId}`);
+    88→        const data = await res.json();
+    89→        setUpiData(data);
+    90→        setShowUpiModal(true);
+    91→        return; // wait for user to confirm payment
+    92→      } catch (e: any) {
+    93→        alert("Failed to generate UPI QR: " + e.message);
+    94→        return;
+    95→      }
+    96→    }
+    97→    setPlacing(true);
+    98→    try {
+    99→      const payload = {
+   100→        items: lines.map((l) => ({
+   101→          itemId: l.item.id,
+   102→          name: l.item.name,
+   103→          emoji: l.item.emoji,
+   104→          image: l.item.image,
+   105→          price: l.item.price,
+   106→          qty: l.qty,
+   107→          addOns: selectedAddOns[l.item.id] || [],
+   108→        })),
+   109→        subtotal,
+   110→        deliveryFee,
+   111→        taxes,
+   112→        total,
+   113→        mode,
+   114→        address: mode === "delivery" ? address : null,
+   115→        paymentMethod: pay,
+   116→        notes: notes || null,
+   117→        locationId,
+   118→        useWallet,
+   119→      };
+   120→      const res = await fetch("/api/orders", {
+   121→        method: "POST",
+   122→        headers: { "Content-Type": "application/json" },
+   123→        body: JSON.stringify(payload),
+   124→      });
+   125→      const data = await res.json();
+   126→      if (!res.ok) throw new Error(data.error || "Failed to place order");
+   127→      setPlaced({
+   128→        orderId: data.order.orderId,
+   129→        invoiceNumber: data.order.invoiceNumber || "—",
+   130→        earnedPoints: data.earnedPoints || 0,
+   131→      });
+   132→      setShowUpiModal(false);
+   133→      setUpiData(null);
+   134→      clear();
+   135→      await refresh(); // refresh session to update wallet balance + loyalty points
+   136→    } catch (e: any) {
+   137→      alert(e?.message || "Failed to place order");
+   138→    } finally {
+   139→      setPlacing(false);
+   140→    }
+   141→  };
+   142→
+   143→  const toggleAddOn = (itemId: string, addOnId: string) => {
+   144→    setSelectedAddOns((s) => {
+   145→      const cur = s[itemId] || [];
+   146→      return {
+   147→        ...s,
+   148→        [itemId]: cur.includes(addOnId)
+   149→          ? cur.filter((x) => x !== addOnId)
+   150→          : [...cur, addOnId],
+   151→      };
+   152→    });
+   153→  };
+   154→
+   155→  return (
+   156→    <section
+   157→      id="order"
+   158→      className="relative py-24 sm:py-32 bg-gradient-to-b from-ohho-black-light via-ohho-black to-ohho-black-light overflow-hidden"
+   159→    >
+   160→      <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-72 w-[80%] rounded-full bg-ohho-orange/8 blur-3xl" />
+   161→
+   162→      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+   163→        {/* Header */}
+   164→        <div className="max-w-2xl">
+   165→          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-orange/10 border border-ohho-orange/30 text-ohho-orange text-xs font-semibold tracking-wider uppercase">
+   166→            <ShoppingBag className="h-3.5 w-3.5" />
+   167→            Online Ordering Platform
+   168→          </div>
+   169→          <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+   170→            Build your order, <span className="text-gradient-ohho">check out.</span>
+   171→          </h2>
+   172→          <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+   173→            Pick a category, add to cart, customize with add-ons, choose delivery
+   174→            or pickup, pay your way. Orders save to your account — track them
+   175→            live and download invoices from your dashboard.
+   176→          </p>
+   177→        </div>
+   178→
+   179→        {/* Auth hint */}
+   180→        {!user && (
+   181→          <div className="mt-6 p-3 rounded-xl bg-ohho-gold/8 border border-ohho-gold/25 text-sm text-ohho-cream/80 flex items-center gap-2">
+   182→            <Sparkles className="h-4 w-4 text-ohho-gold flex-shrink-0" />
+   183→            <span>
+   184→              <strong className="text-ohho-gold">Sign in</strong> to place orders,
+   185→              track them live, and earn loyalty points. Demo:{" "}
+   186→              <code className="text-ohho-cream">demo@ohhofoods.com</code> / <code className="text-ohho-cream">demo123</code>
+   187→            </span>
+   188→          </div>
+   189→        )}
+   190→
+   191→        <AnimatePresence mode="wait">
+   192→          {placed ? (
+   193→            /* ---------- Order placed confirmation ---------- */
+   194→            <motion.div
+   195→              key="placed"
+   196→              initial={{ opacity: 0, scale: 0.96 }}
+   197→              animate={{ opacity: 1, scale: 1 }}
+   198→              exit={{ opacity: 0, scale: 0.96 }}
+   199→              className="mt-12 glass-card rounded-2xl p-8 sm:p-12 text-center max-w-2xl mx-auto"
+   200→            >
+   201→              <div className="h-20 w-20 mx-auto rounded-full bg-ohho-orange/15 border-2 border-ohho-orange grid place-items-center">
+   202→                <CheckCircle2 className="h-10 w-10 text-ohho-orange" />
+   203→              </div>
+   204→              <h3 className="mt-6 font-display text-3xl sm:text-4xl text-ohho-cream">
+   205→                Order placed!
+   206→              </h3>
+   207→              <p className="mt-3 text-ohho-cream/75">
+   208→                Your OHHO BURGERS order is now in the kitchen. Track it in
+   209→                real-time — from grill to your door. We&apos;ve also added{" "}
+   210→                <strong className="text-ohho-gold">{placed.earnedPoints} loyalty points</strong> to your account.
+   211→              </p>
+   212→              <div className="mt-6 grid grid-cols-2 gap-3 max-w-md mx-auto">
+   213→                <div className="px-4 py-3 rounded-xl bg-ohho-black/60 border border-ohho-gold/25">
+   214→                  <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-cream-dim">
+   215→                    Order ID
+   216→                  </div>
+   217→                  <div className="font-display text-lg text-ohho-gold tracking-wider mt-1 break-all">
+   218→                    {placed.orderId}
+   219→                  </div>
+   220→                </div>
+   221→                <div className="px-4 py-3 rounded-xl bg-ohho-black/60 border border-ohho-gold/25">
+   222→                  <div className="text-[10px] uppercase tracking-[0.3em] text-ohho-cream-dim">
+   223→                    Invoice #
+   224→                  </div>
+   225→                  <div className="font-display text-lg text-ohho-gold tracking-wider mt-1">
+   226→                    {placed.invoiceNumber}
+   227→                  </div>
+   228→                </div>
+   229→              </div>
+   230→              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+   231→                <button
+   232→                  onClick={() => navigate("track")}
+   233→                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
+   234→                >
+   235→                  <Truck className="h-4 w-4" />
+   236→                  Track your order
+   237→                </button>
+   238→                <button
+   239→                  onClick={() => setPlaced(null)}
+   240→                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10"
+   241→                >
+   242→                  Place another order
+   243→                </button>
+   244→              </div>
+   245→            </motion.div>
+   246→          ) : (
+   247→            /* ---------- Active order builder ---------- */
+   248→            <motion.div
+   249→              key="builder"
+   250→              initial={{ opacity: 0 }}
+   251→              animate={{ opacity: 1 }}
+   252→              exit={{ opacity: 0 }}
+   253→              className="mt-10 grid lg:grid-cols-12 gap-6"
+   254→            >
+   255→              {/* Left: menu */}
+   256→              <div className="lg:col-span-8">
+   257→                {/* Category tabs */}
+   258→                <div className="flex flex-wrap gap-2 mb-6">
+   259→                  {categories.filter(c => c.id !== "Add-ons").map((c) => (
+   260→                    <button
+   261→                      key={c.id}
+   262→                      onClick={() => setCat(c.id)}
+   263→                      className={cn(
+   264→                        "inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold border transition-all",
+   265→                        cat === c.id
+   266→                          ? "bg-ohho-orange text-ohho-black border-ohho-orange shadow-lg shadow-ohho-orange/30"
+   267→                          : "bg-ohho-black/40 text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/60 hover:text-ohho-gold"
+   268→                      )}
+   269→                    >
+   270→                      <span>{c.emoji}</span>
+   271→                      {c.label}
+   272→                    </button>
+   273→                  ))}
+   274→                </div>
+   275→
+   276→                {/* Items */}
+   277→                <div className="grid sm:grid-cols-2 gap-4">
+   278→                  {items.map((item) => {
+   279→                    const inCart = lines.find((l) => l.item.id === item.id);
+   280→                    const itemAddOns = selectedAddOns[item.id] || [];
+   281→                    return (
+   282→                      <div
+   283→                        key={item.id}
+   284→                        className="glass-card glass-card-hover rounded-xl p-4 flex gap-4"
+   285→                      >
+   286→                        <div className="h-24 w-24 rounded-lg overflow-hidden flex-shrink-0 bg-ohho-black">
+   287→                          <img
+   288→                            src={item.image}
+   289→                            alt={item.name}
+   290→                            className="h-full w-full object-cover"
+   291→                          />
+   292→                        </div>
+   293→                        <div className="flex-1 min-w-0 flex flex-col">
+   294→                          <div className="flex items-start justify-between gap-2">
+   295→                            <h3 className="font-semibold text-ohho-cream text-sm leading-tight">
+   296→                              {item.emoji} {item.name}
+   297→                            </h3>
+   298→                            <div className="font-display text-ohho-gold text-lg whitespace-nowrap">
+   299→                              ₹{item.price}
+   300→                            </div>
+   301→                          </div>
+   302→                          <div className="mt-1 flex items-center gap-3 text-[11px] text-ohho-cream-dim">
+   303→                            <span className="inline-flex items-center gap-0.5">
+   304→                              <Clock className="h-3 w-3" />
+   305→                              {item.prepTime}
+   306→                            </span>
+   307→                            <span>{item.kcal} kcal</span>
+   308→                            {item.spice > 0 && (
+   309→                              <span className="inline-flex items-center gap-0.5">
+   310→                                {Array.from({ length: 3 }).map((_, s) => (
+   311→                                  <Flame
+   312→                                    key={s}
+   313→                                    className={cn(
+   314→                                      "h-2.5 w-2.5",
+   315→                                      s < item.spice
+   316→                                        ? "text-ohho-red fill-ohho-red/50"
+   317→                                        : "text-ohho-cream/15"
+   318→                                    )}
+   319→                                  />
+   320→                                ))}
+   321→                              </span>
+   322→                            )}
+   323→                          </div>
+   324→                          <p className="mt-1 text-xs text-ohho-cream/65 line-clamp-2">
+   325→                            {item.description}
+   326→                          </p>
+   327→
+   328→                          {itemAddOns.length > 0 && (
+   329→                            <div className="mt-1 text-[10px] text-ohho-gold">
+   330→                              +{itemAddOns.length} add-on{itemAddOns.length !== 1 ? "s" : ""} selected
+   331→                            </div>
+   332→                          )}
+   333→
+   334→                          <div className="mt-auto pt-2 flex items-center gap-2">
+   335→                            {inCart ? (
+   336→                              <>
+   337→                                <div className="flex items-center gap-2">
+   338→                                  <button
+   339→                                    onClick={() => setQty(item.id, inCart.qty - 1)}
+   340→                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+   341→                                  >
+   342→                                    −
+   343→                                  </button>
+   344→                                  <span className="text-sm text-ohho-cream w-6 text-center font-semibold">
+   345→                                    {inCart.qty}
+   346→                                  </span>
+   347→                                  <button
+   348→                                    onClick={() => setQty(item.id, inCart.qty + 1)}
+   349→                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+   350→                                  >
+   351→                                    +
+   352→                                  </button>
+   353→                                </div>
+   354→                                <button
+   355→                                  onClick={() => setAddOnModal(item)}
+   356→                                  className="ml-auto text-[11px] text-ohho-gold hover:underline"
+   357→                                >
+   358→                                  + Add-ons
+   359→                                </button>
+   360→                              </>
+   361→                            ) : (
+   362→                              <>
+   363→                                <button
+   364→                                  onClick={() => add(item)}
+   365→                                  className="flex-1 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange font-semibold text-sm hover:bg-ohho-orange hover:text-ohho-black transition-colors border border-ohho-orange/30"
+   366→                                >
+   367→                                  + Add to order
+   368→                                </button>
+   369→                                <button
+   370→                                  onClick={() => setAddOnModal(item)}
+   371→                                  className="px-2 py-2 rounded-md text-[11px] text-ohho-cream-dim hover:text-ohho-gold border border-ohho-gold/15"
+   372→                                  aria-label="Customize with add-ons"
+   373→                                >
+   374→                                  <Plus className="h-3.5 w-3.5" />
+   375→                                </button>
+   376→                              </>
+   377→                            )}
+   378→                          </div>
+   379→                        </div>
+   380→                      </div>
+   381→                    );
+   382→                  })}
+   383→                </div>
+   384→
+   385→                {/* Add-ons strip */}
+   386→                <div className="mt-8 p-4 rounded-xl glass-card">
+   387→                  <div className="flex items-center justify-between mb-3">
+   388→                    <div>
+   389→                      <div className="font-display text-lg text-ohho-cream">
+   390→                        ✨ Make it louder — Add-ons
+   391→                      </div>
+   392→                      <div className="text-xs text-ohho-cream-dim">
+   393→                        Extra cheese, extra patty, extra dips. Tap any item&apos;s + to customize.
+   394→                      </div>
+   395→                    </div>
+   396→                  </div>
+   397→                  <div className="grid grid-cols-3 gap-2">
+   398→                    {addOns.map((a) => (
+   399→                      <button
+   400→                        key={a.id}
+   401→                        onClick={() => add(a)}
+   402→                        className="p-3 rounded-lg bg-ohho-black/40 border border-ohho-gold/10 hover:border-ohho-gold/40 text-left transition-colors"
+   403→                      >
+   404→                        <div className="text-2xl">{a.emoji}</div>
+   405→                        <div className="text-xs font-semibold text-ohho-cream mt-1">
+   406→                          {a.name}
+   407→                        </div>
+   408→                        <div className="text-[11px] text-ohho-gold">+₹{a.price}</div>
+   409→                      </button>
+   410→                    ))}
+   411→                  </div>
+   412→                </div>
+   413→              </div>
+   414→
+   415→              {/* Right: cart summary + checkout */}
+   416→              <div className="lg:col-span-4">
+   417→                <div className="glass-card rounded-2xl p-5 lg:sticky lg:top-24">
+   418→                  <div className="flex items-center justify-between">
+   419→                    <div className="font-display text-2xl text-ohho-cream">
+   420→                      Your Order
+   421→                    </div>
+   422→                    {count > 0 && (
+   423→                      <button
+   424→                        onClick={clear}
+   425→                        className="text-xs text-ohho-cream-dim hover:text-ohho-red"
+   426→                      >
+   427→                        Clear
+   428→                      </button>
+   429→                    )}
+   430→                  </div>
+   431→                  <div className="mt-1 text-xs text-ohho-cream-dim">
+   432→                    {count} item{count !== 1 ? "s" : ""} · Live Premium
+   433→                  </div>
+   434→
+   435→                  {/* Line items */}
+   436→                  <div className="mt-4 space-y-2 max-h-64 overflow-y-auto ohho-scroll pr-1">
+   437→                    {lines.length === 0 ? (
+   438→                      <div className="text-center py-8 text-ohho-cream-dim text-sm">
+   439→                        <Sparkles className="h-8 w-8 mx-auto mb-2 text-ohho-gold/50" />
+   440→                        Add items from the menu to start your order.
+   441→                      </div>
+   442→                    ) : (
+   443→                      lines.map((line) => (
+   444→                        <div
+   445→                          key={line.item.id}
+   446→                          className="flex items-center gap-2 p-2 rounded-lg bg-ohho-black/40 text-sm"
+   447→                        >
+   448→                          <div className="flex-1 min-w-0">
+   449→                            <div className="text-ohho-cream truncate">
+   450→                              {line.item.emoji} {line.item.name}
+   451→                            </div>
+   452→                            <div className="text-xs text-ohho-cream-dim">
+   453→                              ₹{line.item.price} × {line.qty}
+   454→                            </div>
+   455→                          </div>
+   456→                          <div className="flex items-center gap-1">
+   457→                            <button
+   458→                              onClick={() => setQty(line.item.id, line.qty - 1)}
+   459→                              className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+   460→                            >
+   461→                              −
+   462→                            </button>
+   463→                            <span className="w-5 text-center text-ohho-cream text-xs">
+   464→                              {line.qty}
+   465→                            </span>
+   466→                            <button
+   467→                              onClick={() => setQty(line.item.id, line.qty + 1)}
+   468→                              className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+   469→                            >
+   470→                              +
+   471→                            </button>
+   472→                          </div>
+   473→                          <div className="font-display text-ohho-gold text-sm w-14 text-right">
+   474→                            ₹{line.item.price * line.qty}
+   475→                          </div>
+   476→                          <button
+   477→                            onClick={() => remove(line.item.id)}
+   478→                            className="text-ohho-cream-dim hover:text-ohho-red text-xs"
+   479→                            aria-label="Remove"
+   480→                          >
+   481→                            <Trash2 className="h-3.5 w-3.5" />
+   482→                          </button>
+   483→                        </div>
+   484→                      ))
+   485→                    )}
+   486→                  </div>
+   487→
+   488→                  {/* Location selector */}
+   489→                  <div className="mt-5">
+   490→                    <label className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-1.5 flex items-center gap-1">
+   491→                      <MapPin className="h-3 w-3" /> Order from
+   492→                    </label>
+   493→                    <div className="grid grid-cols-2 gap-1.5">
+   494→                      {ohhoLocations.map((loc) => (
+   495→                        <button
+   496→                          key={loc.id}
+   497→                          onClick={() => setLocationId(loc.id)}
+   498→                          className={cn(
+   499→                            "p-2 rounded-md text-[11px] font-semibold border transition-all text-left",
+   500→                            locationId === loc.id
+   501→                              ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
+   502→                              : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"
+   503→                          )}
+   504→                        >
+   505→                          <div className="font-bold truncate">{loc.city}</div>
+   506→                          <div className="text-[9px] opacity-80">{loc.area.split(" — ")[0]}</div>
+   507→                        </button>
+   508→                      ))}
+   509→                    </div>
+   510→                  </div>
+   511→
+   512→                  {/* Mode toggle */}
+   513→                  <div className="mt-4 grid grid-cols-2 gap-2">
+   514→                    <button
+   515→                      onClick={() => setMode("delivery")}
+   516→                      className={cn(
+   517→                        "py-2 rounded-md text-xs font-semibold border transition-all",
+   518→                        mode === "delivery"
+   519→                          ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
+   520→                          : "bg-transparent text-ohho-cream-dim border-ohho-gold/20"
+   521→                      )}
+   522→                    >
+   523→                      <Truck className="h-3.5 w-3.5 inline mr-1" />
+   524→                      Delivery
+   525→                    </button>
+   526→                    <button
+   527→                      onClick={() => setMode("pickup")}
+   528→                      className={cn(
+   529→                        "py-2 rounded-md text-xs font-semibold border transition-all",
+   530→                        mode === "pickup"
+   531→                          ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
+   532→                          : "bg-transparent text-ohho-cream-dim border-ohho-gold/20"
+   533→                      )}
+   534→                    >
+   535→                      <MapPin className="h-3.5 w-3.5 inline mr-1" />
+   536→                      Pickup
+   537→                    </button>
+   538→                  </div>
+   539→
+   540→                  {/* Address (delivery only) */}
+   541→                  {mode === "delivery" && (
+   542→                    <div className="mt-3">
+   543→                      <label className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">
+   544→                        Delivery address
+   545→                      </label>
+   546→                      <textarea
+   547→                        value={address}
+   548→                        onChange={(e) => setAddress(e.target.value)}
+   549→                        placeholder="Flat / House no, street, area, city, pincode"
+   550→                        className="mt-1 w-full p-3 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 resize-none"
+   551→                        rows={3}
+   552→                      />
+   553→                    </div>
+   554→                  )}
+   555→
+   556→                  {/* Order notes */}
+   557→                  <div className="mt-3">
+   558→                    <label className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">
+   559→                      Special instructions (optional)
+   560→                    </label>
+   561→                    <input
+   562→                      value={notes}
+   563→                      onChange={(e) => setNotes(e.target.value)}
+   564→                      placeholder="e.g. less spicy, extra crispy, no onions"
+   565→                      className="mt-1 w-full px-3 py-2.5 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50"
+   566→                    />
+   567→                  </div>
+   568→
+   569→                  {/* Wallet toggle */}
+   570→                  {user && user.walletBalance > 0 && (
+   571→                    <div className="mt-3 p-3 rounded-lg bg-ohho-gold/8 border border-ohho-gold/20 flex items-center justify-between gap-3">
+   572→                      <div className="min-w-0">
+   573→                        <div className="text-xs font-semibold text-ohho-cream">Use OHHO Wallet</div>
+   574→                        <div className="text-[10px] text-ohho-cream-dim">
+   575→                          Balance: ₹{walletBalanceRupees.toFixed(2)} · Save ₹{walletDebit.toFixed(2)}
+   576→                        </div>
+   577→                      </div>
+   578→                      <button
+   579→                        onClick={() => setUseWallet((v) => !v)}
+   580→                        className={cn(
+   581→                          "relative h-6 w-11 rounded-full transition-colors flex-shrink-0",
+   582→                          useWallet ? "bg-ohho-orange" : "bg-ohho-cream/20"
+   583→                        )}
+   584→                        aria-label="Toggle wallet"
+   585→                      >
+   586→                        <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform", useWallet ? "translate-x-5" : "translate-x-0.5")} />
+   587→                      </button>
+   588→                    </div>
+   589→                  )}
+   590→
+   591→                  {/* Payment */}
+   592→                  <div className="mt-4">
+   593→                    <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-1.5">
+   594→                      Payment method
+   595→                    </div>
+   596→                    <div className="grid grid-cols-3 gap-1.5">
+   597→                      {PAYMENT_METHODS.map((m) => {
+   598→                        const Icon = m.icon;
+   599→                        return (
+   600→                          <button
+   601→                            key={m.id}
+   602→                            onClick={() => setPay(m.id)}
+   603→                            className={cn(
+   604→                              "p-2 rounded-md text-[10px] font-semibold border transition-all flex flex-col items-center gap-1",
+   605→                              pay === m.id
+   606→                                ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
+   607→                                : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"
+   608→                            )}
+   609→                          >
+   610→                            <Icon className="h-3.5 w-3.5" />
+   611→                            {m.label}
+   612→                          </button>
+   613→                        );
+   614→                      })}
+   615→                    </div>
+   616→                  </div>
+   617→
+   618→                  {/* Loyalty hint */}
+   619→                  {user && (
+   620→                    <div className="mt-3 p-2 rounded-md bg-ohho-gold/8 border border-ohho-gold/15 text-[11px] text-ohho-cream/80">
+   621→                      You&apos;ll earn <strong className="text-ohho-gold">{Math.floor(total / 10)} loyalty pts</strong> on this order.
+   622→                    </div>
+   623→                  )}
+   624→
+   625→                  {/* Totals */}
+   626→                  <div className="mt-5 pt-4 border-t border-ohho-gold/10 space-y-1.5 text-sm">
+   627→                    <div className="flex justify-between text-ohho-cream-dim">
+   628→                      <span>Subtotal</span>
+   629→                      <span>₹{subtotal}</span>
+   630→                    </div>
+   631→                    {mode === "delivery" && (
+   632→                      <div className="flex justify-between text-ohho-cream-dim">
+   633→                        <span>Delivery {deliveryFee === 0 && "(free over ₹400)"}</span>
+   634→                        <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+   635→                      </div>
+   636→                    )}
+   637→                    <div className="flex justify-between text-ohho-cream-dim">
+   638→                      <span>Taxes &amp; charges (5%)</span>
+   639→                      <span>₹{taxes}</span>
+   640→                    </div>
+   641→                    {walletDebit > 0 && (
+   642→                      <div className="flex justify-between text-ohho-gold">
+   643→                        <span>Wallet debit</span>
+   644→                        <span>−₹{walletDebit.toFixed(2)}</span>
+   645→                      </div>
+   646→                    )}
+   647→                    <div className="flex justify-between font-display text-xl text-ohho-gold pt-2 border-t border-ohho-gold/10 mt-2">
+   648→                      <span>Total {walletDebit > 0 && "due"}</span>
+   649→                      <span>₹{total.toFixed(2)}</span>
+   650→                    </div>
+   651→                  </div>
+   652→
+   653→                  <button
+   654→                    disabled={lines.length === 0 || placing}
+   655→                    onClick={placeOrder}
+   656→                    className={cn(
+   657→                      "mt-5 w-full py-3.5 rounded-md font-bold transition-all flex items-center justify-center gap-2",
+   658→                      lines.length === 0 || placing
+   659→                        ? "bg-ohho-cream/10 text-ohho-cream-dim cursor-not-allowed"
+   660→                        : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-xl hover:shadow-ohho-orange/40"
+   661→                    )}
+   662→                  >
+   663→                    {placing ? (
+   664→                      <>
+   665→                        <Loader2 className="h-4 w-4 animate-spin" />
+   666→                        Placing order…
+   667→                      </>
+   668→                    ) : lines.length === 0 ? (
+   669→                      "Add items to continue"
+   670→                    ) : !user ? (
+   671→                      <>
+   672→                        Sign in to place order · ₹{total}
+   673→                        <ArrowRight className="h-4 w-4" />
+   674→                      </>
+   675→                    ) : (
+   676→                      `Place order · ₹${total}`
+   677→                    )}
+   678→                  </button>
+   679→
+   680→                  {!user && lines.length > 0 && (
+   681→                    <div className="mt-2 text-center text-[11px] text-ohho-cream-dim">
+   682→                      Account required to track orders &amp; earn points.
+   683→                    </div>
+   684→                  )}
+   685→                </div>
+   686→              </div>
+   687→            </motion.div>
+   688→          )}
+   689→        </AnimatePresence>
+   690→      </div>
+   691→
+   692→      {/* Add-ons modal */}
+   693→      <AnimatePresence>
+   694→        {addOnModal && (
+   695→          <motion.div
+   696→            initial={{ opacity: 0 }}
+   697→            animate={{ opacity: 1 }}
+   698→            exit={{ opacity: 0 }}
+   699→            className="fixed inset-0 z-[80] grid place-items-center p-4 bg-ohho-black/80 backdrop-blur-md"
+   700→            onClick={() => setAddOnModal(null)}
+   701→          >
+   702→            <motion.div
+   703→              initial={{ scale: 0.95, y: 16 }}
+   704→              animate={{ scale: 1, y: 0 }}
+   705→              exit={{ scale: 0.95, y: 16 }}
+   706→              onClick={(e) => e.stopPropagation()}
+   707→              className="w-full max-w-md rounded-2xl bg-ohho-black-light border border-ohho-gold/25 shadow-2xl p-6"
+   708→            >
+   709→              <div className="flex items-start justify-between mb-4">
+   710→                <div>
+   711→                  <div className="font-display text-xl text-ohho-cream">
+   712→                    Customize: {addOnModal.name}
+   713→                  </div>
+   714→                  <div className="text-xs text-ohho-cream-dim mt-0.5">
+   715→                    Add extras to make it louder.
+   716→                  </div>
+   717→                </div>
+   718→                <button
+   719→                  onClick={() => setAddOnModal(null)}
+   720→                  className="h-8 w-8 grid place-items-center rounded-md text-ohho-cream-dim hover:bg-ohho-orange/10 hover:text-ohho-cream"
+   721→                >
+   722→                  <X className="h-4 w-4" />
+   723→                </button>
+   724→              </div>
+   725→
+   726→              <div className="space-y-2">
+   727→                {addOns.map((a) => {
+   728→                  const selected = (selectedAddOns[addOnModal.id] || []).includes(a.id);
+   729→                  return (
+   730→                    <button
+   731→                      key={a.id}
+   732→                      onClick={() => toggleAddOn(addOnModal.id, a.id)}
+   733→                      className={cn(
+   734→                        "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
+   735→                        selected
+   736→                          ? "bg-ohho-orange/15 border-ohho-orange"
+   737→                          : "bg-ohho-black/40 border-ohho-gold/10 hover:border-ohho-gold/40"
+   738→                      )}
+   739→                    >
+   740→                      <div className="h-12 w-12 rounded-md overflow-hidden bg-ohho-black flex-shrink-0">
+   741→                        <img src={a.image} alt={a.name} className="h-full w-full object-cover" />
+   742→                      </div>
+   743→                      <div className="flex-1 text-left">
+   744→                        <div className="text-sm font-semibold text-ohho-cream">
+   745→                          {a.emoji} {a.name}
+   746→                        </div>
+   747→                        <div className="text-xs text-ohho-cream-dim line-clamp-1">
+   748→                          {a.description}
+   749→                        </div>
+   750→                      </div>
+   751→                      <div className="text-right">
+   752→                        <div className="font-display text-ohho-gold">+₹{a.price}</div>
+   753→                        <div
+   754→                          className={cn(
+   755→                            "mt-1 h-5 w-5 rounded-full border-2 ml-auto grid place-items-center",
+   756→                            selected
+   757→                              ? "bg-ohho-orange border-ohho-orange"
+   758→                              : "border-ohho-cream-dim/40"
+   759→                          )}
+   760→                        >
+   761→                          {selected && <CheckCircle2 className="h-3 w-3 text-ohho-black" />}
+   762→                        </div>
+   763→                      </div>
+   764→                    </button>
+   765→                  );
+   766→                })}
+   767→              </div>
+   768→
+   769→              <button
+   770→                onClick={() => setAddOnModal(null)}
+   771→                className="mt-5 w-full py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
+   772→              >
+   773→                Done
+   774→              </button>
+   775→            </motion.div>
+   776→          </motion.div>
+   777→        )}
+   778→      </AnimatePresence>
+   779→
+   780→      {/* UPI QR Payment Modal */}
+   781→      <AnimatePresence>
+   782→        {showUpiModal && upiData && (
+   783→          <motion.div
+   784→            initial={{ opacity: 0 }}
+   785→            animate={{ opacity: 1 }}
+   786→            exit={{ opacity: 0 }}
+   787→            className="fixed inset-0 z-[90] grid place-items-center p-4 bg-ohho-black/85 backdrop-blur-md"
+   788→            onClick={() => { setShowUpiModal(false); setUpiData(null); }}
+   789→          >
+   790→            <motion.div
+   791→              initial={{ scale: 0.95, y: 16 }}
+   792→              animate={{ scale: 1, y: 0 }}
+   793→              exit={{ scale: 0.95, y: 16 }}
+   794→              onClick={(e) => e.stopPropagation()}
+   795→              className="w-full max-w-md rounded-2xl bg-ohho-black-light border border-ohho-gold/25 shadow-2xl p-6"
+   796→            >
+   797→              <div className="text-center">
+   798→                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ohho-orange/15 border border-ohho-orange/40 text-ohho-orange text-[10px] font-bold uppercase tracking-wider">
+   799→                  UPI Payment
+   800→                </div>
+   801→                <div className="mt-4 font-display text-3xl text-ohho-gold">₹{total.toFixed(2)}</div>
+   802→                <div className="text-xs text-ohho-cream-dim mt-1">Scan to pay {upiData.merchantName}</div>
+   803→                <div className="text-[10px] text-ohho-cream-dim mt-0.5">UPI: {upiData.merchantUpi}</div>
+   804→              </div>
+   805→
+   806→              {/* QR code */}
+   807→              <div className="mt-5 grid place-items-center">
+   808→                <div className="bg-white p-3 rounded-xl">
+   809→                  <img
+   810→                    src={upiData.qrImageUrl}
+   811→                    alt="UPI QR code"
+   812→                    className="h-48 w-48"
+   813→                  />
+   814→                </div>
+   815→              </div>
+   816→
+   817→              {/* UPI app deep-links */}
+   818→              <div className="mt-5">
+   819→                <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-2 text-center">
+   820→                  Or pay with an app
+   821→                </div>
+   822→                <div className="grid grid-cols-4 gap-2">
+   823→                  {upiData.upiApps?.map((app: any) => (
+   824→                    <a
+   825→                      key={app.id}
+   826→                      href={app.intent}
+   827→                      className="p-2 rounded-lg bg-ohho-black/50 border border-ohho-gold/15 hover:border-ohho-gold/40 text-center transition-colors"
+   828→                    >
+   829→                      <div className="text-xl mb-0.5">
+   830→                        {app.id === "gpay" ? "🟢" : app.id === "phonepe" ? "🟣" : app.id === "paytm" ? "🔵" : "🟦"}
+   831→                      </div>
+   832→                      <div className="text-[9px] font-semibold text-ohho-cream">{app.name}</div>
+   833→                    </a>
+   834→                  ))}
+   835→                </div>
+   836→              </div>
+   837→
+   838→              <div className="mt-5 flex gap-2">
+   839→                <button
+   840→                  onClick={() => { setShowUpiModal(false); setUpiData(null); }}
+   841→                  className="flex-1 py-2.5 rounded-md border border-ohho-gold/30 text-ohho-cream text-sm font-semibold hover:bg-ohho-gold/10"
+   842→                >
+   843→                  Cancel
+   844→                </button>
+   845→                <button
+   846→                  onClick={placeOrder}
+   847→                  disabled={placing}
+   848→                  className="flex-1 py-2.5 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold text-sm hover:shadow-lg hover:shadow-ohho-orange/40 disabled:opacity-50 flex items-center justify-center gap-2"
+   849→                >
+   850→                  {placing ? <><Loader2 className="h-4 w-4 animate-spin" /> Placing…</> : "I've Paid — Place Order"}
+   851→                </button>
+   852→              </div>
+   853→              <div className="mt-3 text-center text-[10px] text-ohho-cream-dim">
+   854→                Tap an app above to open it with amount pre-filled. After paying, tap &quot;I&apos;ve Paid&quot;.
+   855→              </div>
+   856→            </motion.div>
+   857→          </motion.div>
+   858→        )}
+   859→      </AnimatePresence>
+   860→    </section>
+   861→  );
+   862→}
+   863→

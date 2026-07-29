@@ -64,9 +64,9 @@ export function LiveKitchenView() {
   return (
     <section
       id="track"
-      className="relative py-24 sm:py-32 bg-ohho-black grain overflow-hidden"
+      className="relative py-16 sm:py-20 bg-ohho-black grain overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="max-w-2xl">
@@ -77,21 +77,21 @@ export function LiveKitchenView() {
               </span>
               Live Kitchen — Real-Time Pipeline
             </div>
-            <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+            <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
               From grill to <span className="text-gradient-ohho">your door.</span>
             </h2>
-            <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+            <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
               Watch every active OHHO order move through the pipeline in real time.
               When an admin updates a status, the order jumps to its next stage —
               no refresh needed.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border", connected ? "bg-ohho-gold/10 text-ohho-gold border-ohho-gold/30" : "bg-ohho-cream/5 text-ohho-cream-dim border-ohho-cream/20")}>
               {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
               {connected ? "Live (WebSocket)" : "Polling (15s)"}
             </div>
-            <button onClick={load} className="h-9 w-9 grid place-items-center rounded-md border border-ohho-gold/20 text-ohho-cream hover:bg-ohho-orange/10" aria-label="Refresh">
+            <button onClick={load} className="h-10 w-10 grid place-items-center rounded-md border border-ohho-gold/20 text-ohho-cream hover:bg-ohho-orange/10" aria-label="Refresh">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </button>
           </div>
@@ -118,18 +118,18 @@ export function LiveKitchenView() {
 
         {/* Pipeline columns */}
         {loading ? (
-          <div className="mt-10 text-center py-20 text-ohho-cream-dim">
+          <div className="mt-8 text-center py-16 sm:py-20 text-ohho-cream-dim">
             <Clock className="h-10 w-10 mx-auto animate-pulse mb-3" />
             Loading pipeline…
           </div>
         ) : totalActive === 0 ? (
-          <div className="mt-10 text-center py-20 glass-card rounded-2xl">
+          <div className="mt-8 text-center py-16 sm:py-20 glass-card rounded-2xl">
             <CheckCircle2 className="h-12 w-12 mx-auto text-ohho-gold/50 mb-3" />
             <div className="font-display text-xl text-ohho-cream">All caught up!</div>
             <div className="text-sm text-ohho-cream-dim mt-1">No active orders right now. Place an order to see the pipeline in action.</div>
           </div>
         ) : (
-          <div className="mt-10 grid md:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {STAGES.map((stage) => {
               const Icon = stage.icon;
               const orders = pipeline[stage.id] || [];
@@ -193,7 +193,7 @@ export function LiveKitchenView() {
         )}
 
         {/* Demo note */}
-        <div className="mt-8 p-4 rounded-xl glass-card flex items-start gap-3">
+        <div className="mt-6 sm:mt-8 p-4 rounded-xl glass-card flex items-start gap-3">
           <Radio className="h-5 w-5 text-ohho-gold flex-shrink-0 mt-0.5" />
           <div className="text-sm text-ohho-cream/70">
             <strong className="text-ohho-gold">Live demo:</strong> Open the admin panel (login as <code className="text-ohho-cream">admin@ohhofoods.com</code> / <code className="text-ohho-cream">admin123</code>), go to Orders tab, and change any order&apos;s status — this pipeline updates instantly via WebSocket (no page refresh).

@@ -20,7 +20,8 @@ import {
   Trash2,
   ArrowRight,
 } from "lucide-react";
-import { menuItems, categories, type MenuItem, ohhoLocations } from "@/data/menu";
+import { menuItems as staticMenu, categories as staticCategories, type MenuItem } from "@/data/menu";
+import { useMenuItems, useLocations } from "@/hooks/use-content";
 import { useCart, cartSubtotal, cartCount } from "@/store/cart";
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { useNav } from "@/components/ohho/nav-context";
@@ -36,13 +37,19 @@ const PAYMENT_METHODS = [
 type Placed = { orderId: string; invoiceNumber: string; earnedPoints: number };
 
 export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void }) {
+  const { items: dbMenuItems, loading: menuLoading } = useMenuItems();
+  const { locations: dbLocations, loading: locLoading } = useLocations();
+  const menuItems = dbMenuItems.length > 0 ? dbMenuItems : staticMenu;
+  const ohhoLocations = dbLocations.length > 0 ? dbLocations : [];
+  const categories = staticCategories.filter(c => c.id !== "Add-ons");
+
   const [cat, setCat] = useState<string>("Burgers");
   const [placed, setPlaced] = useState<Placed | null>(null);
   const [pay, setPay] = useState("upi");
   const [mode, setMode] = useState<"delivery" | "pickup">("delivery");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [locationId, setLocationId] = useState<string>(ohhoLocations[0]?.id || "kairana");
+  const [locationId, setLocationId] = useState<string>(ohhoLocations[0]?.slug || "kairana");
   const [useWallet, setUseWallet] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [upiData, setUpiData] = useState<any>(null);
@@ -63,10 +70,11 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
   const total = grossTotal - walletDebit;
 
   const items = useMemo(
-    () => menuItems.filter((m) => m.category === cat && !m.isAddOn),
-    [cat]
+    () => menuItems.filter((m: any) => m.category === cat && !m.isAddOn),
+    [cat, menuItems]
   );
-  const addOns = useMemo(() => menuItems.filter((m) => m.isAddOn), []);
+  const addOns = useMemo(() => menuItems.filter((m: any) => m.isAddOn), [menuItems]);
+  void menuLoading; void locLoading;
 
   const placeOrder = async () => {
     if (lines.length === 0) return;
@@ -155,21 +163,21 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
   return (
     <section
       id="order"
-      className="relative py-24 sm:py-32 bg-gradient-to-b from-ohho-black-light via-ohho-black to-ohho-black-light overflow-hidden"
+      className="relative py-16 sm:py-20 bg-gradient-to-b from-ohho-black-light via-ohho-black to-ohho-black-light overflow-hidden"
     >
       <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-72 w-[80%] rounded-full bg-ohho-orange/8 blur-3xl" />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-orange/10 border border-ohho-orange/30 text-ohho-orange text-xs font-semibold tracking-wider uppercase">
             <ShoppingBag className="h-3.5 w-3.5" />
             Online Ordering Platform
           </div>
-          <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+          <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
             Build your order, <span className="text-gradient-ohho">check out.</span>
           </h2>
-          <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+          <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
             Pick a category, add to cart, customize with add-ons, choose delivery
             or pickup, pay your way. Orders save to your account — track them
             live and download invoices from your dashboard.
@@ -230,14 +238,14 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => navigate("track")}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
+                  className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
                 >
                   <Truck className="h-4 w-4" />
                   Track your order
                 </button>
                 <button
                   onClick={() => setPlaced(null)}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10"
+                  className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-md border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10"
                 >
                   Place another order
                 </button>
@@ -261,7 +269,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                       key={c.id}
                       onClick={() => setCat(c.id)}
                       className={cn(
-                        "inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold border transition-all",
+                        "inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition-all",
                         cat === c.id
                           ? "bg-ohho-orange text-ohho-black border-ohho-orange shadow-lg shadow-ohho-orange/30"
                           : "bg-ohho-black/40 text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/60 hover:text-ohho-gold"
@@ -337,7 +345,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => setQty(item.id, inCart.qty - 1)}
-                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+                                    className="h-8 w-8 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
                                   >
                                     −
                                   </button>
@@ -346,14 +354,14 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                                   </span>
                                   <button
                                     onClick={() => setQty(item.id, inCart.qty + 1)}
-                                    className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
+                                    className="h-8 w-8 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25 font-bold"
                                   >
                                     +
                                   </button>
                                 </div>
                                 <button
                                   onClick={() => setAddOnModal(item)}
-                                  className="ml-auto text-[11px] text-ohho-gold hover:underline"
+                                  className="ml-auto h-8 px-2 rounded-md text-[11px] text-ohho-gold hover:bg-ohho-gold/10 border border-ohho-gold/30"
                                 >
                                   + Add-ons
                                 </button>
@@ -362,13 +370,13 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                               <>
                                 <button
                                   onClick={() => add(item)}
-                                  className="flex-1 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange font-semibold text-sm hover:bg-ohho-orange hover:text-ohho-black transition-colors border border-ohho-orange/30"
+                                  className="flex-1 h-10 rounded-md bg-ohho-orange/15 text-ohho-orange font-semibold text-sm hover:bg-ohho-orange hover:text-ohho-black transition-colors border border-ohho-orange/30"
                                 >
                                   + Add to order
                                 </button>
                                 <button
                                   onClick={() => setAddOnModal(item)}
-                                  className="px-2 py-2 rounded-md text-[11px] text-ohho-cream-dim hover:text-ohho-gold border border-ohho-gold/15"
+                                  className="h-10 w-10 grid place-items-center rounded-md text-ohho-cream-dim hover:text-ohho-gold border border-ohho-gold/15"
                                   aria-label="Customize with add-ons"
                                 >
                                   <Plus className="h-3.5 w-3.5" />
@@ -456,7 +464,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => setQty(line.item.id, line.qty - 1)}
-                              className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+                              className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
                             >
                               −
                             </button>
@@ -465,7 +473,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                             </span>
                             <button
                               onClick={() => setQty(line.item.id, line.qty + 1)}
-                              className="h-6 w-6 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
+                              className="h-7 w-7 grid place-items-center rounded bg-ohho-orange/15 text-ohho-orange hover:bg-ohho-orange/25"
                             >
                               +
                             </button>
@@ -475,7 +483,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                           </div>
                           <button
                             onClick={() => remove(line.item.id)}
-                            className="text-ohho-cream-dim hover:text-ohho-red text-xs"
+                            className="h-8 w-8 grid place-items-center text-ohho-cream-dim hover:text-ohho-red text-xs rounded hover:bg-ohho-red/10"
                             aria-label="Remove"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -493,11 +501,11 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                     <div className="grid grid-cols-2 gap-1.5">
                       {ohhoLocations.map((loc) => (
                         <button
-                          key={loc.id}
-                          onClick={() => setLocationId(loc.id)}
+                          key={loc.slug}
+                          onClick={() => setLocationId(loc.slug)}
                           className={cn(
-                            "p-2 rounded-md text-[11px] font-semibold border transition-all text-left",
-                            locationId === loc.id
+                            "min-h-[48px] p-2 rounded-md text-[11px] font-semibold border transition-all text-left flex flex-col justify-center",
+                            locationId === loc.slug
                               ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
                               : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"
                           )}
@@ -514,7 +522,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                     <button
                       onClick={() => setMode("delivery")}
                       className={cn(
-                        "py-2 rounded-md text-xs font-semibold border transition-all",
+                        "h-10 rounded-md text-xs font-semibold border transition-all",
                         mode === "delivery"
                           ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
                           : "bg-transparent text-ohho-cream-dim border-ohho-gold/20"
@@ -526,7 +534,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                     <button
                       onClick={() => setMode("pickup")}
                       className={cn(
-                        "py-2 rounded-md text-xs font-semibold border transition-all",
+                        "h-10 rounded-md text-xs font-semibold border transition-all",
                         mode === "pickup"
                           ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
                           : "bg-transparent text-ohho-cream-dim border-ohho-gold/20"
@@ -601,7 +609,7 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                             key={m.id}
                             onClick={() => setPay(m.id)}
                             className={cn(
-                              "p-2 rounded-md text-[10px] font-semibold border transition-all flex flex-col items-center gap-1",
+                              "min-h-[56px] p-2 rounded-md text-[10px] font-semibold border transition-all flex flex-col items-center gap-1 justify-center",
                               pay === m.id
                                 ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
                                 : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"

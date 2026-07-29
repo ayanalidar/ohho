@@ -117,22 +117,22 @@ export function RewardsSection() {
   return (
     <section
       id="rewards"
-      className="relative py-24 sm:py-32 bg-gradient-to-b from-ohho-black via-ohho-black-light to-ohho-black overflow-hidden"
+      className="relative py-16 sm:py-20 bg-gradient-to-b from-ohho-black via-ohho-black-light to-ohho-black overflow-hidden"
     >
-      <div className="absolute -top-32 right-0 h-96 w-96 rounded-full bg-ohho-orange/10 blur-3xl" />
-      <div className="absolute -bottom-32 left-0 h-96 w-96 rounded-full bg-ohho-gold/10 blur-3xl" />
+      <div className="absolute -top-32 right-0 h-96 w-96 rounded-full bg-ohho-orange/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 left-0 h-96 w-96 rounded-full bg-ohho-gold/10 blur-3xl pointer-events-none" />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-gold/10 border border-ohho-gold/30 text-ohho-gold text-xs font-semibold tracking-wider uppercase">
             <Crown className="h-3.5 w-3.5" />
             OHHO Rewards · Loyalty Program
           </div>
-          <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+          <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
             Eat. Earn. <span className="text-gradient-ohho">Climb tiers.</span>
           </h2>
-          <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+          <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
             Every ₹10 you spend earns 1 OHHO point. Climb through four tiers —
             Bronze to OHHO Black — and unlock real, repeat-customer perks.
             Our retention rate is <strong className="text-ohho-gold">80%</strong> for a reason.
@@ -145,7 +145,7 @@ export function RewardsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
-          className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3"
+          className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3"
         >
           {[
             { label: "Happy Customers", value: "10,000+", icon: Sparkles },
@@ -169,7 +169,7 @@ export function RewardsSection() {
         </motion.div>
 
         {/* Tier cards */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {rewardTiers.map((tier, i) => (
             <TierRing key={tier.id} tier={tier} index={i} />
           ))}
@@ -181,12 +181,12 @@ export function RewardsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="mt-16 p-8 rounded-2xl glass-card"
+          className="mt-12 p-5 sm:p-8 rounded-2xl glass-card"
         >
-          <div className="font-display text-2xl text-ohho-cream mb-6">
+          <div className="font-display text-xl sm:text-2xl text-ohho-cream mb-5 sm:mb-6">
             How OHHO Rewards works
           </div>
-          <div className="grid sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
             {[
               { step: "01", title: "Order anything", body: "Every ₹10 in your cart earns 1 OHHO point. Burgers, pizzas, sips, add-ons — all count.", icon: "🍔" },
               { step: "02", title: "Climb tiers automatically", body: "Hit 500 pts → Silver. 2,000 → Gold. 5,000+ → OHHO Black (invite-only). Perks compound.", icon: "📈" },
@@ -209,18 +209,18 @@ export function RewardsSection() {
         </motion.div>
 
         {/* Customer stories — retention proof */}
-        <div className="mt-16">
-          <div className="text-center mb-8">
+        <div className="mt-12">
+          <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ohho-orange/10 border border-ohho-orange/30 text-ohho-orange text-xs font-semibold tracking-wider uppercase">
               <Quote className="h-3.5 w-3.5" />
               Why customers stay
             </div>
-            <h3 className="mt-4 font-display text-3xl sm:text-4xl text-ohho-cream">
+            <h3 className="mt-4 font-display text-2xl sm:text-3xl lg:text-4xl text-ohho-cream">
               Real stories. Real retention.
             </h3>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {customerStories.map((s, i) => (
               <motion.div
                 key={s.name}
@@ -268,20 +268,20 @@ export function RewardsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
-          className="mt-16 p-8 sm:p-10 rounded-2xl bg-gradient-to-br from-ohho-orange/15 via-ohho-black-light to-ohho-black border border-ohho-orange/25 flex flex-col sm:flex-row items-center justify-between gap-6"
+          className="mt-12 p-5 sm:p-8 lg:p-10 rounded-2xl bg-gradient-to-br from-ohho-orange/15 via-ohho-black-light to-ohho-black border border-ohho-orange/25 flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6"
         >
           <div>
-            <div className="font-display text-2xl sm:text-3xl text-ohho-cream">
+            <div className="font-display text-xl sm:text-2xl lg:text-3xl text-ohho-cream">
               Sign up. Start earning today.
             </div>
-            <div className="mt-2 text-ohho-cream/70">
+            <div className="mt-2 text-ohho-cream/70 text-sm sm:text-base">
               Create an account, place your first order, and you&apos;re already
               in the Bronze tier — earning points on every bite.
             </div>
           </div>
           <button
             onClick={() => navigate("order")}
-            className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold whitespace-nowrap hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow"
+            className="inline-flex items-center justify-center h-12 px-6 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold whitespace-nowrap hover:shadow-xl hover:shadow-ohho-orange/40 transition-shadow flex-shrink-0"
           >
             Start earning →
           </button>

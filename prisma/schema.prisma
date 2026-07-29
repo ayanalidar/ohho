@@ -16,7 +16,8 @@ model User {
   name          String
   passwordHash  String
   phone         String?
-  role          String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  role          String    @default("CUSTOMER") // CUSTOMER | ADMIN | OPERATOR
+  locationId    String?   // for OPERATOR role: which location they manage
   addresses     String?   // JSON string of saved addresses
   loyaltyPoints Int       @default(0)
   walletBalance Int       @default(0) // in paise (₹1 = 100)
@@ -29,6 +30,7 @@ model User {
   reviews       Review[]
   franchiseLeads FranchiseLead[]
   cateringInquiries CateringInquiry[]
+  location      Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
 }
 
 model Order {
@@ -40,18 +42,18 @@ model Order {
   subtotal        Int
   deliveryFee     Int
   taxes           Int
-  walletDebit     Int         @default(0) // amount debited from wallet
+  walletDebit     Int         @default(0)
   total           Int
   mode            String      // delivery | pickup
-  status          String      @default("PREPARING") // PREPARING | PICKED | ENROUTE | NEAR | ARRIVED | CANCELLED
+  status          String      @default("PREPARING")
   address         String?
-  paymentMethod   String      // upi | card | cod | wallet
-  paymentStatus   String      @default("PAID") // PAID | PENDING | REFUNDED
+  paymentMethod   String
+  paymentStatus   String      @default("PAID")
   etaSeconds      Int         @default(1500)
   progress        Float       @default(0)
   invoiceNumber   String?     @unique
   notes           String?
-  locationId      String?     // which OHHO cart (kairana | shamli)
+  locationId      String?
   rated           Boolean     @default(false)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -77,9 +79,9 @@ model Review {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rating    Int      // 1-5
+  rating    Int
   text      String?
-  itemName   String?  // if review is for a specific item
+  itemName  String?
   itemId    String?
   createdAt DateTime @default(now())
 }
@@ -90,13 +92,13 @@ model FranchiseLead {
   email         String
   phone         String
   city          String
-  locationType  String   // mall | high-street | station | food-court | other
-  investment    String   // 1.5-3L | 3-5L | 5-10L | 10L+
-  timeline      String   // immediate | 1-3-months | 3-6-months | exploring
+  locationType  String
+  investment    String
+  timeline      String
   message       String?
   userId        String?
   user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status        String   @default("NEW") // NEW | CONTACTED | QUALIFIED | REJECTED | CLOSED
+  status        String   @default("NEW")
   createdAt     DateTime @default(now())
 }
 
@@ -105,23 +107,94 @@ model CateringInquiry {
   name        String
   email       String
   phone       String
-  eventType   String   // office-party | wedding | birthday | corporate | other
+  eventType   String
   eventDate   String
   guestCount  Int
-  budget      String   // under-5k | 5-10k | 10-25k | 25k+
+  budget      String
   message     String?
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status      String   @default("NEW") // NEW | QUOTED | CONFIRMED | COMPLETED | REJECTED
+  status      String   @default("NEW")
   createdAt   DateTime @default(now())
 }
 
 model ReferralRedemption {
   id          String   @id @default(cuid())
-  referrerId  String   // user who shared the code
-  refereeId   String   // user who used the code
+  referrerId  String
+  refereeId   String
   code        String
-  orderId     String?  // first order that triggered the reward
+  orderId     String?
   rewardGiven Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+// ─── Admin-editable content models ───────────────────────
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  emoji       String
+  description String
+  ingredients String   // JSON array
+  image       String
+  category    String   // Burgers | Pizza | Sandwiches | Buckets | Sips | Add-ons
+  price       Int
+  kcal        Int
+  prepTime    String
+  spice       Int      @default(0)
+  tag         String?
+  isAddOn     Boolean  @default(false)
+  signature   Boolean  @default(false)
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CateringPackage {
+  id          String   @id @default(cuid())
+  name        String
+  pax         String
+  price       String
+  items       String   // JSON array
+  note        String?
+  color       String   @default("#ff6a00")
+  sortOrder   Int      @default(0)
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimelineEra {
+  id          String   @id @default(cuid())
+  category    String   @unique  // Burgers | Pizza | Sandwiches | Buckets | Sips | Add-ons
+  label       String
+  emoji       String
+  color       String
+  tagline     String
+  year        String
+  era         String
+  blurb       String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Location {
+  id              String   @id @default(cuid())
+  slug            String   @unique  // kairana | shamli
+  name            String
+  city            String
+  area            String
+  status          String   @default("operational") // operational | coming-soon
+  rating          Float    @default(4.8)
+  customers       Int      @default(0)
+  deliveryRadiusKm Int     @default(5)
+  prepTimeExtra   String   @default("0 min")
+  image           String
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  users           User[]
 }

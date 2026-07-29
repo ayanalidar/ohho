@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { useCart } from "@/store/cart";
 import { menuItems } from "@/data/menu";
+import { useOrderSocket } from "@/hooks/use-order-socket";
 import { cn } from "@/lib/utils";
 
 type OrderItem = {
@@ -169,6 +170,23 @@ export function UserDashboard({ open, onClose }: { open: boolean; onClose: () =>
   const active = orders.filter((o) => o.status !== "ARRIVED" && o.status !== "CANCELLED");
   const past = orders.filter((o) => o.status === "ARRIVED" || o.status === "CANCELLED");
 
+  // Subscribe to real-time updates for the most recent active order
+  const latestActiveOrderId = active[0]?.orderId || null;
+  const { lastUpdate, connected } = useOrderSocket(latestActiveOrderId);
+
+  // When a WS update comes in, update the order in state
+  useEffect(() => {
+    if (lastUpdate) {
+      setOrders((cur) =>
+        cur.map((o) =>
+          o.orderId === lastUpdate.orderId
+            ? { ...o, status: lastUpdate.status, progress: lastUpdate.progress }
+            : o
+        )
+      );
+    }
+  }, [lastUpdate]);
+
   const reorder = (order: Order) => {
     order.items.forEach((it) => {
       const menuItem = menuItems.find((m) => m.id === it.itemId);
@@ -277,6 +295,7 @@ export function UserDashboard({ open, onClose }: { open: boolean; onClose: () =>
                   <OrdersTab
                     ordersTab={ordersTab} setOrdersTab={setOrdersTab}
                     active={active} past={past} user={user}
+                    connected={connected}
                     onReorder={reorder} onRate={(o) => setRatingOrder(o)}
                     onInvoice={(o) => downloadInvoice(o, user?.name || "Customer", user?.email || "")}
                   />
@@ -299,17 +318,30 @@ export function UserDashboard({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
-function OrdersTab({ ordersTab, setOrdersTab, active, past, user, onReorder, onRate, onInvoice }: any) {
+function OrdersTab({ ordersTab, setOrdersTab, active, past, user, connected, onReorder, onRate, onInvoice }: any) {
+  const latestActive = active[0];
   return (
     <div>
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 items-center">
         <button onClick={() => setOrdersTab("active")} className={cn("px-4 py-2 rounded-md text-sm font-semibold border", ordersTab === "active" ? "bg-ohho-orange text-ohho-black border-ohho-orange" : "text-ohho-cream-dim border-ohho-gold/20")}>
           Active ({active.length})
         </button>
         <button onClick={() => setOrdersTab("past")} className={cn("px-4 py-2 rounded-md text-sm font-semibold border", ordersTab === "past" ? "bg-ohho-orange text-ohho-black border-ohho-orange" : "text-ohho-cream-dim border-ohho-gold/20")}>
           Past ({past.length})
         </button>
+        {active.length > 0 && (
+          <span className={cn("ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border", connected ? "bg-ohho-gold/10 text-ohho-gold border-ohho-gold/30" : "bg-ohho-cream/5 text-ohho-cream-dim border-ohho-cream/20")}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-ohho-gold animate-pulse" : "bg-ohho-cream-dim")} />
+            {connected ? "LIVE" : "Connecting…"}
+          </span>
+        )}
       </div>
+
+      {/* Live tracker for the most recent active order */}
+      {ordersTab === "active" && latestActive && (
+        <LiveOrderTracker order={latestActive} />
+      )}
+
       {(ordersTab === "active" ? active : past).length === 0 ? (
         <div className="text-center py-16">
           <ShoppingBag className="h-12 w-12 mx-auto text-ohho-cream-dim/40 mb-3" />
@@ -544,6 +576,86 @@ function ReferTab({ referral, user, onCopy }: { referral: any; user: any; onCopy
                 <div className="text-xs text-ohho-gold font-semibold">+100 pts</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LiveOrderTracker({ order }: { order: Order }) {
+  const STAGES = [
+    { id: "PREPARING", label: "Preparing", icon: Clock, color: "#ff6a00" },
+    { id: "PICKED", label: "Picked up", icon: Bike, color: "#ffc107" },
+    { id: "ENROUTE", label: "On the way", icon: Bike, color: "#ff8c00" },
+    { id: "NEAR", label: "Near you", icon: MapPin, color: "#ffd54f" },
+    { id: "ARRIVED", label: "Delivered", icon: CheckCircle2, color: "#10b981" },
+  ];
+  const stageIdx = STAGES.findIndex(s => s.id === order.status);
+  const eta = Math.max(0, Math.round((1 - order.progress) * 25)); // rough ETA in min
+
+  return (
+    <div className="mb-4 rounded-2xl glass-card p-5 border border-ohho-orange/30">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">Tracking live</div>
+          <div className="font-display text-lg text-ohho-cream">{order.orderId}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">ETA</div>
+          <div className="font-display text-xl text-ohho-gold">{eta > 0 ? `${eta} min` : "Arrived!"}</div>
+        </div>
+      </div>
+
+      {/* Stage timeline */}
+      <div className="flex items-center gap-1">
+        {STAGES.map((s, i) => {
+          const Icon = s.icon;
+          const done = i <= stageIdx;
+          const current = i === stageIdx;
+          return (
+            <div key={s.id} className="flex-1 flex flex-col items-center gap-1.5">
+              <div
+                className={cn("h-9 w-9 rounded-full grid place-items-center transition-all", current && "scale-110")}
+                style={{
+                  background: done ? `${s.color}22` : "rgba(245,230,204,0.05)",
+                  border: `2px solid ${done ? s.color : "rgba(245,230,204,0.15)"}`,
+                }}
+              >
+                <Icon className="h-4 w-4" style={{ color: done ? s.color : "rgba(245,230,204,0.3)" }} />
+              </div>
+              <div className={cn("text-[9px] text-center leading-tight", done ? "text-ohho-cream" : "text-ohho-cream-dim")}>
+                {s.label}
+              </div>
+              {i < STAGES.length - 1 && (
+                <div className={cn("absolute h-0.5 transition-colors", done ? "bg-ohho-orange" : "bg-ohho-cream/10")} style={{ width: "100%", left: "50%", top: "18px", zIndex: -1 }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-4">
+        <div className="flex justify-between text-[10px] text-ohho-cream-dim mb-1">
+          <span>Progress</span>
+          <span>{Math.round(order.progress * 100)}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-ohho-cream/10 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-ohho-orange to-ohho-gold transition-all duration-500"
+            style={{ width: `${Math.max(5, order.progress * 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Rider info if past PREPARING */}
+      {order.status !== "PREPARING" && order.status !== "ARRIVED" && (
+        <div className="mt-4 p-3 rounded-lg bg-ohho-black/40 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-ohho-orange to-ohho-red grid place-items-center text-xl">🛵</div>
+          <div>
+            <div className="text-sm text-ohho-cream font-semibold">Imran K.</div>
+            <div className="text-[11px] text-ohho-cream-dim">⭐ 4.9 · Honda Activa</div>
           </div>
         </div>
       )}

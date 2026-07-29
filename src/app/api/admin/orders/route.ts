@@ -3,15 +3,18 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { verifySession, SESSION_COOKIE } from "@/lib/auth";
 
-// GET /api/admin/orders — list all orders (admin only)
+// GET /api/admin/orders — list all orders (admin sees all, operator sees own location)
 export async function GET(req: NextRequest) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await verifySession(token);
-  if (!user || user.role !== "ADMIN") {
+  if (!user || user.role === "CUSTOMER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  // Operators only see their location's orders
+  const where = user.role === "OPERATOR" && user.locationId ? { locationId: user.locationId } : {};
   const orders = await db.order.findMany({
+    where,
     include: { items: true, user: { select: { id: true, name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -23,7 +26,7 @@ export async function PATCH(req: NextRequest) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await verifySession(token);
-  if (!user || user.role !== "ADMIN") {
+  if (!user || user.role === "CUSTOMER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const body = await req.json();

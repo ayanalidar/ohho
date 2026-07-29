@@ -140,7 +140,7 @@ export function HeroSpotlight() {
       {/* Content */}
       <div className="relative z-10 min-h-[100svh] flex flex-col">
         {/* Top eyebrow */}
-        <div className="pt-28 sm:pt-32 px-6 lg:px-12 max-w-7xl mx-auto w-full">
+        <div className="pt-24 sm:pt-28 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -153,7 +153,7 @@ export function HeroSpotlight() {
         </div>
 
         {/* Main brand display */}
-        <div className="flex-1 flex items-center px-6 lg:px-12 max-w-7xl mx-auto w-full">
+        <div className="flex-1 flex items-center px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto w-full">
           <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -171,7 +171,7 @@ export function HeroSpotlight() {
                   BURGERS
                 </span>
               </h1>
-              <p className="mt-6 text-ohho-cream/85 text-lg sm:text-xl max-w-2xl font-light">
+              <p className="mt-5 sm:mt-6 text-ohho-cream/85 text-base sm:text-xl max-w-2xl font-light">
                 <span className="font-semibold text-ohho-gold">Live Premium.</span>{" "}
                 Chicken burgers, pizzas, sandwiches &amp; shakes — built for India,
                 engineered for fast returns, delivered to your door with live
@@ -187,20 +187,20 @@ export function HeroSpotlight() {
             >
               <button
                 onClick={() => navigate("order")}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold tracking-wide hover:shadow-2xl hover:shadow-ohho-orange/50 transition-shadow"
+                className="inline-flex items-center justify-center gap-2 h-12 px-6 sm:px-7 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold tracking-wide hover:shadow-2xl hover:shadow-ohho-orange/50 transition-shadow"
               >
                 Order Now
                 <span className="text-base">→</span>
               </button>
               <button
                 onClick={() => navigate("menu")}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md bg-ohho-black/40 backdrop-blur border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10 hover:border-ohho-gold/60 transition-colors"
+                className="inline-flex items-center justify-center gap-2 h-12 px-6 sm:px-7 rounded-md bg-ohho-black/40 backdrop-blur border border-ohho-gold/30 text-ohho-cream font-semibold hover:bg-ohho-gold/10 hover:border-ohho-gold/60 transition-colors"
               >
                 Explore Menu
               </button>
               <button
                 onClick={() => navigate("company")}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md text-ohho-cream-dim hover:text-ohho-gold transition-colors font-medium"
+                className="inline-flex items-center justify-center gap-2 h-12 px-6 sm:px-7 rounded-md text-ohho-cream-dim hover:text-ohho-gold transition-colors font-medium"
               >
                 About the Company
               </button>
@@ -211,7 +211,7 @@ export function HeroSpotlight() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.75, duration: 0.7 }}
-              className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl"
+              className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl"
             >
               {ohhoStats.map((s) => (
                 <div
@@ -232,8 +232,8 @@ export function HeroSpotlight() {
         </div>
 
         {/* Bottom strip — trust badges + scroll cue */}
-        <div className="px-6 lg:px-12 max-w-7xl mx-auto w-full pb-8">
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-ohho-gold/10">
+        <div className="px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto w-full pb-6 sm:pb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 pt-5 sm:pt-6 border-t border-ohho-gold/10">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-ohho-cream-dim">
               <span className="inline-flex items-center gap-1.5">
                 <Star className="h-3.5 w-3.5 text-ohho-gold fill-ohho-gold" />

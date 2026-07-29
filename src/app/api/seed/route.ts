@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_MAX_AGE, type SessionUser } from "@/lib/auth";
 import bcrypt from "bcryptjs";
@@ -7,10 +7,91 @@ function genReferralCode(name: string) {
   return "OHHO-" + name.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6) + Math.floor(Math.random() * 90 + 10);
 }
 
-// GET /api/seed — one-time setup: creates admin user, sample customer, sample orders
+// Seed data — synced with the current static menu data
+const SEED_MENU_ITEMS = [
+  // BURGERS
+  { slug: "crispy-chicken-burger", name: "Crispy Chicken Burger", emoji: "🍔", description: "Crispy-coated fried chicken patty with fresh veggies and gooey melted cheese on a toasted sesame bun. The OHHO original — crunchy, juicy, timeless.", ingredients: ["Crispy Chicken Patty","Melted Cheese","Fresh Veggies","Sesame Bun"], image: "/ohho-images/crispy-chicken-burger.png", category: "Burgers", price: 120, kcal: 568, prepTime: "6 min", spice: 1, tag: "Bestseller", isAddOn: false, signature: false, sortOrder: 1 },
+  { slug: "ohho-special-chicken-burger", name: "OHHO Special Chicken Burger", emoji: "🔥", description: "Double-stacked, succulent fried chicken thighs layered with a rich cheese blend, premium mayo, tomato, lettuce, and onions. Our flagship — built for serious appetites.", ingredients: ["Double Chicken Thighs","Cheese Blend","Premium Mayo","Tomato","Lettuce","Onions"], image: "/ohho-images/ohho-special-chicken-burger.png", category: "Burgers", price: 170, kcal: 824, prepTime: "9 min", spice: 2, tag: "Signature", isAddOn: false, signature: true, sortOrder: 2 },
+  // PIZZA
+  { slug: "fire-pizza", name: "Fire Pizza", emoji: "🌶️", description: "Wood-fired crust loaded with molten mozzarella, chili flakes, and our signature spicy chicken topping. For the ones who order 'extra hot' without flinching.", ingredients: ["Charred Crust","Mozzarella","Chili Flakes","Spicy Chicken"], image: "/ohho-images/fire-pizza.png", category: "Pizza", price: 89, kcal: 612, prepTime: "11 min", spice: 3, tag: "Spicy", isAddOn: false, signature: false, sortOrder: 1 },
+  { slug: "veg-supreme-pizza", name: "Veg Supreme Pizza", emoji: "🥬", description: "Golden-crust vegetarian feast — bell peppers, onions, mushrooms, sweet corn, and olives under a blanket of melting mozzarella. The only veg pizza you'll ever need.", ingredients: ["Bell Peppers","Onions","Mushrooms","Sweet Corn","Olives","Mozzarella"], image: "/ohho-images/veg-supreme-pizza.png", category: "Pizza", price: 100, kcal: 542, prepTime: "11 min", spice: 1, tag: "Veg", isAddOn: false, signature: false, sortOrder: 2 },
+  { slug: "classic-chicken-pizza", name: "Classic Chicken Pizza", emoji: "🍕", description: "Golden-crust pizza topped with tender seasoned chicken, vibrant peppers, and red onions with melting mozzarella. Hand-tossed. Stone-baked.", ingredients: ["Seasoned Chicken","Bell Peppers","Red Onions","Mozzarella","Golden Crust"], image: "/ohho-images/classic-chicken-pizza.png", category: "Pizza", price: 120, kcal: 712, prepTime: "12 min", spice: 1, tag: null, isAddOn: false, signature: false, sortOrder: 3 },
+  { slug: "ohho-special-chicken-pizza", name: "OHHO Special Chicken Pizza", emoji: "👑", description: "Signature masterpiece loaded with succulent chicken, vibrant green peppers, and zesty red paprika rings with premium cheese. The crown jewel of our menu.", ingredients: ["Premium Chicken","Green Peppers","Red Paprika","Premium Cheese","Signature Base"], image: "/ohho-images/ohho-special-chicken-pizza.png", category: "Pizza", price: 150, kcal: 798, prepTime: "13 min", spice: 2, tag: "Signature", isAddOn: false, signature: true, sortOrder: 4 },
+  { slug: "supreme-chicken-pizza", name: "Supreme Chicken Pizza", emoji: "⭐", description: "Double the chicken, double the cheese, double the indulgence. Our most loaded pizza — for when 'extra' is the only option.", ingredients: ["Double Chicken","Premium Cheese Blend","Herbs","Paprika","Signature Base"], image: "/ohho-images/supreme-chicken-pizza.png", category: "Pizza", price: 250, kcal: 924, prepTime: "14 min", spice: 2, tag: "Premium", isAddOn: false, signature: false, sortOrder: 5 },
+  // SANDWICHES
+  { slug: "classic-chicken-sandwich", name: "Classic Chicken Sandwich", emoji: "🍞", description: "Layers of succulent grilled chicken, melted cheddar, and crisp veggies on toasted sourdough. A classic — perfected.", ingredients: ["Grilled Chicken","Cheddar Cheese","Crisp Veggies","Toasted Sourdough"], image: "/ohho-images/classic-chicken-sandwich.png", category: "Sandwiches", price: 99, kcal: 482, prepTime: "6 min", spice: 1, tag: null, isAddOn: false, signature: false, sortOrder: 1 },
+  { slug: "ohho-special-chicken-sandwich", name: "OHHO Special Chicken Sandwich", emoji: "⭐", description: "Double-stacked signature feast of flame-grilled chicken, secret savory glaze, and caramelized onions on thick brioche. The secret is in the glaze.", ingredients: ["Flame-grilled Chicken","Secret Glaze","Caramelized Onions","Thick Brioche","Cheese"], image: "/ohho-images/ohho-special-chicken-sandwich.png", category: "Sandwiches", price: 120, kcal: 658, prepTime: "8 min", spice: 2, tag: "Signature", isAddOn: false, signature: true, sortOrder: 2 },
+  // BUCKETS
+  { slug: "crispy-chicken-bucket-half", name: "Crispy Chicken Bucket (Half)", emoji: "🍗", description: "A half bucket of golden-fried, extra-crispy chicken pieces — perfect for one (or two, if you're willing to share). Served with ketchup dip.", ingredients: ["Fried Chicken Pieces","Secret Breading","Ketchup Dip"], image: "/ohho-images/crispy-chicken-bucket-half.png", category: "Buckets", price: 149, kcal: 742, prepTime: "10 min", spice: 1, tag: "Trending", isAddOn: false, signature: false, sortOrder: 1 },
+  { slug: "crispy-chicken-bucket-full", name: "Crispy Chicken Bucket (Full)", emoji: "🪣", description: "A full bucket overflowing with golden-fried, extra-crispy chicken pieces — built for the table. Served with three dips. Sharing optional.", ingredients: ["Full Bucket Fried Chicken","Secret Breading","3 Dips","Herbs"], image: "/ohho-images/crispy-chicken-bucket-full.png", category: "Buckets", price: 250, kcal: 1484, prepTime: "12 min", spice: 1, tag: "Bestseller", isAddOn: false, signature: false, sortOrder: 2 },
+  // SIPS
+  { slug: "cold-coffee", name: "Cold Coffee", emoji: "☕", description: "Velvety smooth mocha blend featuring rich chocolate and caramel drizzles topped with whipped cream and chocolate chips. Liquid dessert, basically.", ingredients: ["Cold Coffee","Chocolate","Caramel","Whipped Cream","Chocolate Chips"], image: "/ohho-images/cold-coffee.png", category: "Sips", price: 89, kcal: 386, prepTime: "4 min", spice: 0, tag: "Sip", isAddOn: false, signature: false, sortOrder: 1 },
+  // ADD-ONS
+  { slug: "extra-cheese", name: "Extra Cheese", emoji: "🧀", description: "A generous ladle of molten cheese sauce, drizzled over anything you order. Because 'extra cheese' should mean extra.", ingredients: ["Molten Cheese Sauce","Herbs"], image: "/ohho-images/extra-cheese.png", category: "Add-ons", price: 25, kcal: 142, prepTime: "1 min", spice: 0, tag: null, isAddOn: true, signature: false, sortOrder: 1 },
+  { slug: "extra-patty", name: "Extra Patty", emoji: "🍗", description: "Add another crispy chicken patty to any burger. Double the crunch, double the protein.", ingredients: ["Crispy Chicken Patty"], image: "/ohho-images/extra-patty.png", category: "Add-ons", price: 69, kcal: 312, prepTime: "2 min", spice: 1, tag: null, isAddOn: true, signature: false, sortOrder: 2 },
+  { slug: "extra-dips", name: "Extra Dips", emoji: "🥣", description: "Three dips of your choice — mayo, ketchup, and our signature spicy blend. For the dippers, the dunkers, and the drizzlers.", ingredients: ["Mayo","Ketchup","Spicy Dip"], image: "/ohho-images/extra-dips.png", category: "Add-ons", price: 10, kcal: 98, prepTime: "1 min", spice: 0, tag: null, isAddOn: true, signature: false, sortOrder: 3 },
+];
+
+const SEED_TIMELINE_ERAS = [
+  { category: "Burgers", label: "Burgers", emoji: "🍔", color: "#ff6a00", tagline: "Crispy, juicy, stacked.", year: "2019", era: "The Origin Era", blurb: "Where it all started — a single cart in Kairana, a perfectly crispy chicken patty, and a queue that didn't end. The burger built the brand.", sortOrder: 1 },
+  { category: "Pizza", label: "Pizza", emoji: "🍕", color: "#ffc107", tagline: "Stone-baked. Premium cheese.", year: "2021", era: "The Stone Era", blurb: "Compact stone-bake ovens engineered into 50 sq. ft. carts. A pizza, in 12 minutes, that competes with the chains — at half the price-point, twice the cheese.", sortOrder: 2 },
+  { category: "Sandwiches", label: "Sandwiches", emoji: "🥪", color: "#d92626", tagline: "Grilled, glazed, loaded.", year: "2020", era: "The Brioche Era", blurb: "Customers asked for portable. We answered with flame-grilled stacks on thick brioche — a secret glaze made in batches of 20 litres, never more, never less.", sortOrder: 3 },
+  { category: "Buckets", label: "Buckets", emoji: "🪣", color: "#ff8c00", tagline: "Share. Or don't.", year: "2022", era: "The Bucket Era", blurb: "Crispy fried chicken in half- and full-bucket formats. The most-ordered item across both our test locations, with a 80% customer return-rate.", sortOrder: 4 },
+  { category: "Sips", label: "Sips", emoji: "🥤", color: "#ffd54f", tagline: "Thick, cold, fuel-up.", year: "2023", era: "The Sip Era", blurb: "Cold coffee done right — velvety mocha blend, whipped cream, chocolate drizzle. The cart became a day-part brand, not just a meal stop.", sortOrder: 5 },
+  { category: "Add-ons", label: "Add-ons", emoji: "✨", color: "#ffb74d", tagline: "Extra cheese. Extra everything.", year: "2024", era: "The Extra Era", blurb: "Because 'extra' should mean extra. Cheese, patties, dips — three ways to make any order louder. Our highest-margin category, by design.", sortOrder: 6 },
+];
+
+const SEED_CATERING_PACKAGES = [
+  { name: "Office Lunch Box", pax: "10 – 30 people", price: "₹199 / head", items: ["Crispy Chicken Burger","Cold Coffee","Extra Dips"], note: "Min 24h notice. Delivered hot.", color: "#ff6a00", sortOrder: 1 },
+  { name: "Party Bucket", pax: "20 – 50 people", price: "₹299 / head", items: ["Crispy Chicken Bucket (Full)","2 Pizzas","Cold Coffee","Extra Dips"], note: "Our most popular catering package.", color: "#ffc107", sortOrder: 2 },
+  { name: "Mega Feast", pax: "50+ people", price: "Custom quote", items: ["Unlimited Burgers & Pizzas","Buckets","Sips Bar","Dedicated cart staff"], note: "For weddings & large corporate events.", color: "#d92626", sortOrder: 3 },
+];
+
+const SEED_LOCATIONS = [
+  { slug: "kairana", name: "OHHO Cart — Kairana", city: "Kairana", area: "Nawab Market — Flagship", status: "operational", rating: 4.9, customers: 6500, deliveryRadiusKm: 5, prepTimeExtra: "0 min", image: "/ohho-images/ohho-cart-1.png", active: true },
+  { slug: "shamli", name: "OHHO Cart — Shamli", city: "Shamli", area: "Main Road — Test Cart #2", status: "operational", rating: 4.8, customers: 3800, deliveryRadiusKm: 5, prepTimeExtra: "2 min", image: "/ohho-images/ohho-cart-2.png", active: true },
+];
+
 export async function GET() {
   try {
-    // 1. Create admin
+    // 1. Seed menu items
+    for (const item of SEED_MENU_ITEMS) {
+      await db.menuItem.upsert({
+        where: { slug: item.slug },
+        create: { ...item, ingredients: JSON.stringify(item.ingredients), available: true },
+        update: {},
+      });
+    }
+
+    // 2. Seed timeline eras
+    for (const era of SEED_TIMELINE_ERAS) {
+      await db.timelineEra.upsert({
+        where: { category: era.category },
+        create: era,
+        update: {},
+      });
+    }
+
+    // 3. Seed catering packages
+    for (const pkg of SEED_CATERING_PACKAGES) {
+      const existing = await db.cateringPackage.findFirst({ where: { name: pkg.name } });
+      if (!existing) {
+        await db.cateringPackage.create({
+          data: { ...pkg, items: JSON.stringify(pkg.items), available: true },
+        });
+      }
+    }
+
+    // 4. Seed locations
+    for (const loc of SEED_LOCATIONS) {
+      await db.location.upsert({
+        where: { slug: loc.slug },
+        create: loc,
+        update: {},
+      });
+    }
+
+    // 5. Create admin
     const adminEmail = "admin@ohhofoods.com";
     let admin = await db.user.findUnique({ where: { email: adminEmail } });
     if (!admin) {
@@ -28,10 +109,11 @@ export async function GET() {
       });
     }
 
-    // 2. Create demo customer
+    // 6. Create demo customer
     const custEmail = "demo@ohhofoods.com";
     let cust = await db.user.findUnique({ where: { email: custEmail } });
     if (!cust) {
+      const kairana = await db.location.findUnique({ where: { slug: "kairana" } });
       cust = await db.user.create({
         data: {
           email: custEmail,
@@ -40,7 +122,7 @@ export async function GET() {
           phone: "+91 9650443642",
           role: "CUSTOMER",
           loyaltyPoints: 437,
-          walletBalance: 55000, // ₹550 in paise
+          walletBalance: 55000,
           referralCode: genReferralCode("DemoCustomer"),
           addresses: JSON.stringify([
             { id: "addr1", label: "Home", line: "12 Shamli Rd, Kairana, UP 247774", pincode: "247774" },
@@ -48,17 +130,30 @@ export async function GET() {
           ]),
         },
       });
-    } else {
-      // Ensure loyaltyPoints are set
-      if (cust.loyaltyPoints === 0) {
-        cust = await db.user.update({
-          where: { id: cust.id },
-          data: { loyaltyPoints: 437 },
-        });
-      }
+      void kairana;
     }
 
-    // 3. Create a few demo past orders for the demo customer (only if none exist)
+    // 7. Create demo operator for Kairana
+    const opEmail = "kairana@ohhofoods.com";
+    let operator = await db.user.findUnique({ where: { email: opEmail } });
+    if (!operator) {
+      const kairana = await db.location.findUnique({ where: { slug: "kairana" } });
+      operator = await db.user.create({
+        data: {
+          email: opEmail,
+          name: "Kairana Operator",
+          passwordHash: await bcrypt.hash("operator123", 10),
+          phone: "+91 9652852780",
+          role: "OPERATOR",
+          locationId: kairana?.id || null,
+          loyaltyPoints: 0,
+          walletBalance: 0,
+          referralCode: genReferralCode("KairanaOp"),
+        },
+      });
+    }
+
+    // 8. Create demo past orders
     const existingOrders = await db.order.count({ where: { userId: cust.id } });
     if (existingOrders === 0) {
       const sampleItems = [
@@ -66,14 +161,12 @@ export async function GET() {
         { itemId: "cold-coffee", name: "Cold Coffee", emoji: "☕", image: "/ohho-images/cold-coffee.png", price: 89, qty: 1 },
         { itemId: "crispy-chicken-bucket-half", name: "Crispy Chicken Bucket (Half)", emoji: "🍗", image: "/ohho-images/crispy-chicken-bucket-half.png", price: 149, qty: 1 },
       ];
-
       const now = Date.now();
       const orders = [
         { daysAgo: 18, status: "ARRIVED", progress: 1, items: sampleItems.slice(0, 2), subtotal: 259, mode: "delivery" },
         { daysAgo: 11, status: "ARRIVED", progress: 1, items: [sampleItems[2], sampleItems[1]], subtotal: 238, mode: "delivery" },
         { daysAgo: 4, status: "ARRIVED", progress: 1, items: sampleItems, subtotal: 408, mode: "pickup" },
       ];
-
       for (const o of orders) {
         const subtotal = o.subtotal;
         const deliveryFee = o.mode === "delivery" ? (subtotal > 400 ? 0 : 39) : 0;
@@ -87,6 +180,7 @@ export async function GET() {
             subtotal,
             deliveryFee,
             taxes,
+            walletDebit: 0,
             total,
             mode: o.mode,
             status: o.status,
@@ -97,13 +191,14 @@ export async function GET() {
             progress: o.progress,
             invoiceNumber: `INV-${new Date(now - o.daysAgo * 86400000).getFullYear()}${String(new Date(now - o.daysAgo * 86400000).getMonth() + 1).padStart(2, "0")}-${seq}`,
             createdAt: new Date(now - o.daysAgo * 86400000),
+            locationId: (await db.location.findUnique({ where: { slug: "kairana" } }))?.id || null,
             items: { create: o.items },
           },
         });
       }
     }
 
-    // 4. Return admin session token so the user can log in immediately
+    // 9. Return admin session
     const sessionUser: SessionUser = {
       id: admin.id,
       email: admin.email,
@@ -119,7 +214,8 @@ export async function GET() {
       ok: true,
       admin: { email: adminEmail, password: "admin123" },
       demoCustomer: { email: custEmail, password: "demo123" },
-      message: "Seed complete. Use these credentials to test admin & user flows.",
+      kairanaOperator: { email: opEmail, password: "operator123" },
+      message: "Seed complete. Menu items, timeline eras, catering packages, locations, users, and demo orders created.",
     });
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,

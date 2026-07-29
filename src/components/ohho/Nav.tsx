@@ -148,7 +148,7 @@ export function Nav({
                         <LayoutDashboard className="h-4 w-4 text-ohho-orange" />
                         My Orders &amp; Invoices
                       </button>
-                      {user.role === "ADMIN" && (
+                      {(user.role === "ADMIN" || user.role === "OPERATOR") && (
                         <button
                           onClick={() => {
                             setUserMenuOpen(false);
@@ -157,7 +157,7 @@ export function Nav({
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream hover:bg-ohho-red/10 text-left"
                         >
                           <ShieldCheck className="h-4 w-4 text-ohho-red" />
-                          Admin Panel
+                          {user.role === "ADMIN" ? "Admin Panel" : "Location Panel"}
                         </button>
                       )}
                       <button

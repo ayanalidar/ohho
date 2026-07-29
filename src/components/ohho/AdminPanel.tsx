@@ -17,8 +17,15 @@ import {
   PartyPopper,
   Phone,
   Mail,
+  Utensils,
+  MapPin,
 } from "lucide-react";
+import { useAuth } from "@/components/ohho/AuthProvider";
 import { cn } from "@/lib/utils";
+import { MenuItemsView, type MenuItem } from "./admin/MenuItemsView";
+import { TimelineView, type TimelineEra } from "./admin/TimelineView";
+import { CateringPackagesView, type CateringPackage } from "./admin/CateringPackagesView";
+import { LocationsView, type Location } from "./admin/LocationsView";
 
 type AdminOrder = {
   id: string;
@@ -70,13 +77,19 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "reviews" | "franchise" | "catering">("dashboard");
+  const { user } = useAuth();
+  const isOperator = user?.role === "OPERATOR";
+  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "reviews" | "franchise" | "catering" | "menu-items" | "timeline" | "catering-packages" | "locations">("dashboard");
   const [stats, setStats] = useState<Stats | null>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [franchiseLeads, setFranchiseLeads] = useState<any[]>([]);
   const [cateringInquiries, setCateringInquiries] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [timelineEras, setTimelineEras] = useState<TimelineEra[]>([]);
+  const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
@@ -148,6 +161,46 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
     finally { setLoading(false); }
   }, []);
 
+  const loadMenuItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/menu-items?admin=1");
+      const data = await res.json();
+      setMenuItems(data.items || []);
+    } catch { setMenuItems([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadTimeline = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/timeline");
+      const data = await res.json();
+      setTimelineEras(data.eras || []);
+    } catch { setTimelineEras([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadCateringPackages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/catering-packages?admin=1");
+      const data = await res.json();
+      setCateringPackages(data.packages || []);
+    } catch { setCateringPackages([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadLocations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/locations");
+      const data = await res.json();
+      setLocations(data.locations || []);
+    } catch { setLocations([]); }
+    finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     if (tab === "dashboard") loadStats();
@@ -156,7 +209,11 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
     if (tab === "reviews") loadReviews();
     if (tab === "franchise") loadFranchise();
     if (tab === "catering") loadCatering();
-  }, [open, tab, loadStats, loadOrders, loadUsers, loadReviews, loadFranchise, loadCatering]);
+    if (tab === "menu-items") loadMenuItems();
+    if (tab === "timeline") loadTimeline();
+    if (tab === "catering-packages") loadCateringPackages();
+    if (tab === "locations") loadLocations();
+  }, [open, tab, loadStats, loadOrders, loadUsers, loadReviews, loadFranchise, loadCatering, loadMenuItems, loadTimeline, loadCateringPackages, loadLocations]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     const progress =
@@ -199,10 +256,10 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-ohho-red/15 border border-ohho-red/40 text-ohho-red text-[10px] font-bold uppercase tracking-wider mb-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-ohho-red ohho-ping" />
-                  Admin
+                  {isOperator ? "Operator" : "Admin"}
                 </div>
-                <div className="font-display text-2xl text-ohho-cream">OHHO Control Panel</div>
-                <div className="text-xs text-ohho-cream-dim">Orders · Users · Live stats</div>
+                <div className="font-display text-2xl text-ohho-cream">{isOperator ? "Location Panel" : "OHHO Control Panel"}</div>
+                <div className="text-xs text-ohho-cream-dim">{isOperator ? "Your location · Orders · Kitchen" : "Orders · Users · Live stats"}</div>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -210,6 +267,13 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
                     if (tab === "dashboard") loadStats();
                     if (tab === "orders") loadOrders();
                     if (tab === "users") loadUsers();
+                    if (tab === "reviews") loadReviews();
+                    if (tab === "franchise") loadFranchise();
+                    if (tab === "catering") loadCatering();
+                    if (tab === "menu-items") loadMenuItems();
+                    if (tab === "timeline") loadTimeline();
+                    if (tab === "catering-packages") loadCateringPackages();
+                    if (tab === "locations") loadLocations();
                   }}
                   className="h-9 w-9 grid place-items-center rounded-md border border-ohho-gold/20 text-ohho-cream hover:bg-ohho-orange/10"
                   aria-label="Refresh"
@@ -229,13 +293,17 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
             {/* Tabs */}
             <div className="px-5 pt-4 flex gap-2 border-b border-ohho-gold/10 pb-4 overflow-x-auto ohho-scroll-x">
               {[
-                { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-                { id: "orders", label: "Orders", icon: ShoppingBag },
-                { id: "users", label: "Users", icon: Users },
-                { id: "reviews", label: "Reviews", icon: Star },
-                { id: "franchise", label: "Franchise", icon: Building2 },
-                { id: "catering", label: "Catering", icon: PartyPopper },
-              ].map((t) => {
+                { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
+                { id: "orders", label: "Orders", icon: ShoppingBag, adminOnly: false },
+                { id: "users", label: "Users", icon: Users, adminOnly: true },
+                { id: "reviews", label: "Reviews", icon: Star, adminOnly: true },
+                { id: "franchise", label: "Franchise", icon: Building2, adminOnly: true },
+                { id: "catering", label: "Catering", icon: PartyPopper, adminOnly: true },
+                { id: "menu-items", label: "Menu Items", icon: Utensils, adminOnly: true },
+                { id: "timeline", label: "Timeline", icon: Clock, adminOnly: true },
+                { id: "catering-packages", label: "Catering Pkg", icon: PartyPopper, adminOnly: true },
+                { id: "locations", label: "Locations", icon: MapPin, adminOnly: false },
+              ].filter(t => !isOperator || !t.adminOnly).map((t) => {
                 const Icon = t.icon;
                 return (
                   <button
@@ -272,8 +340,16 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
                 <ReviewsView reviews={reviews} />
               ) : tab === "franchise" ? (
                 <FranchiseLeadsView leads={franchiseLeads} />
-              ) : (
+              ) : tab === "catering" ? (
                 <CateringView inquiries={cateringInquiries} />
+              ) : tab === "menu-items" ? (
+                <MenuItemsView items={menuItems} />
+              ) : tab === "timeline" ? (
+                <TimelineView eras={timelineEras} />
+              ) : tab === "catering-packages" ? (
+                <CateringPackagesView packages={cateringPackages} />
+              ) : (
+                <LocationsView locations={locations} />
               )}
             </div>
           </motion.aside>

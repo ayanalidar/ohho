@@ -10,10 +10,17 @@ export async function GET() {
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const user = await verifySession(token);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // Both admin (all) and customer (own active orders) can view
-    const where = user.role === "ADMIN" ? {} : { userId: user.id };
+    // Admin sees all active orders, operator sees only their location's, customer sees their own
+    let where: any = {};
+    if (user.role === "OPERATOR" && user.locationId) {
+      where = { locationId: user.locationId, status: { notIn: ["ARRIVED", "CANCELLED"] } };
+    } else if (user.role === "ADMIN") {
+      where = { status: { notIn: ["ARRIVED", "CANCELLED"] } };
+    } else {
+      where = { userId: user.id, status: { notIn: ["ARRIVED", "CANCELLED"] } };
+    }
     const activeOrders = await db.order.findMany({
-      where: { ...where, status: { notIn: ["ARRIVED", "CANCELLED"] } },
+      where,
       include: {
         items: true,
         user: { select: { name: true, email: true, phone: true } },

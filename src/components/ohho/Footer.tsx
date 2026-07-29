@@ -188,7 +188,7 @@ export function Footer() {
             © 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.
           </div>
           <div className="flex items-center gap-4">
-            <span>Data sourced from www.ohhofoods.com</span>
+            <span>Made &amp; maintained by: <strong className="text-ohho-gold">GuardianX</strong></span>
             <span>·</span>
             <span>Live Premium.</span>
           </div>

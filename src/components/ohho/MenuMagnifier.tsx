@@ -2,22 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Flame, Clock, Star, ShoppingCart, X } from "lucide-react";
-import { menuItems, type MenuItem } from "@/data/menu";
+import { Plus, Flame, Clock, Star, ShoppingCart, X, Loader2 } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useNav } from "@/components/ohho/nav-context";
+import { useMenuItems } from "@/hooks/use-content";
 import { cn } from "@/lib/utils";
 
 export function MenuMagnifier() {
   const [activeTag, setActiveTag] = useState<string>("All");
-  const [soldOut, setSoldOut] = useState<Set<string>>(new Set());
   const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
+  const { items: menuItems, loading } = useMenuItems();
   const add = useCart((s) => s.add);
   const { navigate } = useNav();
 
   useEffect(() => {
-    fetch("/api/admin/menu").then(r => r.json()).then(d => setSoldOut(new Set(d.soldOut || []))).catch(() => {});
-    // Fetch ratings (in a real app this would be aggregated server-side; here we fetch all reviews)
     fetch("/api/reviews?limit=200").then(r => r.json()).then(d => {
       const map: Record<string, { avg: number; count: number }> = {};
       for (const r of d.reviews || []) {
@@ -38,14 +36,14 @@ export function MenuMagnifier() {
     if (activeTag === "Veg") return menuItems.filter((m) => m.tag === "Veg");
     if (activeTag === "Spicy") return menuItems.filter((m) => m.spice >= 3);
     return menuItems.filter((m) => m.tag === activeTag);
-  }, [activeTag]);
+  }, [activeTag, menuItems]);
 
   return (
     <section
       id="menu"
-      className="relative py-24 sm:py-32 bg-gradient-to-b from-ohho-black via-ohho-black-light to-ohho-black overflow-hidden"
+      className="relative py-16 sm:py-20 bg-gradient-to-b from-ohho-black via-ohho-black-light to-ohho-black overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="max-w-2xl">
@@ -53,10 +51,10 @@ export function MenuMagnifier() {
               <Plus className="h-3.5 w-3.5" />
               Full Menu
             </div>
-            <h2 className="mt-5 font-display text-4xl sm:text-6xl text-ohho-cream leading-[0.95]">
+            <h2 className="mt-5 font-display text-3xl sm:text-5xl lg:text-6xl text-ohho-cream leading-[0.95]">
               The Menu, <span className="text-gradient-ohho">end to end.</span>
             </h2>
-            <p className="mt-4 text-ohho-cream/75 text-lg leading-relaxed">
+            <p className="mt-4 text-ohho-cream/75 text-base sm:text-lg leading-relaxed">
               Burgers, pizzas, sandwiches, buckets, sips &amp; add-ons — every
               item, every price. Tap <strong className="text-ohho-gold">Add</strong> to
               drop it in your cart, then head to Order Online to check out.
@@ -83,7 +81,13 @@ export function MenuMagnifier() {
         </div>
 
         {/* Grid — clean static cards, no magnifier */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? (
+          <div className="mt-10 text-center py-20 text-ohho-cream-dim">
+            <Loader2 className="h-8 w-8 mx-auto animate-spin mb-3" />
+            Loading menu…
+          </div>
+        ) : (
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filtered.map((item, i) => (
             <motion.article
               key={item.id}
@@ -98,9 +102,9 @@ export function MenuMagnifier() {
                   src={item.image}
                   alt={item.name}
                   loading="lazy"
-                  className={cn("h-full w-full object-cover transition-transform duration-500 hover:scale-105", soldOut.has(item.id) && "grayscale opacity-50")}
+                  className={cn("h-full w-full object-cover transition-transform duration-500 hover:scale-105", !item.available && "grayscale opacity-50")}
                 />
-                {soldOut.has(item.id) && (
+                {!item.available && (
                   <div className="absolute inset-0 grid place-items-center">
                     <span className="px-3 py-1.5 rounded-md bg-ohho-black/80 text-ohho-red text-xs font-bold uppercase tracking-wider border border-ohho-red/40">Sold out today</span>
                   </div>
@@ -184,15 +188,15 @@ export function MenuMagnifier() {
                 </div>
                 <button
                   onClick={() => add(item)}
-                  disabled={soldOut.has(item.id)}
+                  disabled={!item.available}
                   className={cn(
-                    "inline-flex items-center gap-2 px-4 py-2.5 rounded-md font-bold text-sm transition-shadow",
-                    soldOut.has(item.id)
+                    "inline-flex items-center gap-2 h-11 px-4 rounded-md font-bold text-sm transition-shadow",
+                    !item.available
                       ? "bg-ohho-cream/5 text-ohho-cream-dim cursor-not-allowed"
                       : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-lg hover:shadow-ohho-orange/40"
                   )}
                 >
-                  {soldOut.has(item.id) ? (
+                  {!item.available ? (
                     <><X className="h-4 w-4" /> Sold out</>
                   ) : (
                     <><ShoppingCart className="h-4 w-4" /> Add</>
@@ -202,16 +206,17 @@ export function MenuMagnifier() {
             </motion.article>
           ))}
         </div>
+        )}
 
         {/* Hint footer */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-ohho-cream-dim">
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-ohho-cream-dim">
           <span className="inline-flex items-center gap-2">
             <Star className="h-3.5 w-3.5 text-ohho-gold" />
             Tap Add to drop items in your cart.
           </span>
           <button
             onClick={() => navigate("order")}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 font-semibold hover:bg-ohho-orange/25 transition-colors"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 font-semibold hover:bg-ohho-orange/25 transition-colors"
           >
             Go to Order Online →
           </button>
