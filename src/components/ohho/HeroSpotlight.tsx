@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Flame, MapPin, Star, Truck } from "lucide-react";
 import { ohhoStats } from "@/data/menu";
 import { useNav } from "@/components/ohho/nav-context";
+import { AnimatedCounter } from "@/components/ohho/HomeFeatures";
 
 // Hero images cycle — AI-generated premium OHHO food photography
 const HERO_IMAGES = [
@@ -219,8 +220,7 @@ export function HeroSpotlight() {
                   className="glass-card rounded-lg px-4 py-3"
                 >
                   <div className="font-display text-2xl sm:text-3xl text-ohho-gold">
-                    {s.value}
-                    <span className="text-ohho-orange">{s.suffix}</span>
+                    <AnimatedCounter value={s.value} suffix={s.suffix} />
                   </div>
                   <div className="text-[11px] uppercase tracking-wider text-ohho-cream-dim mt-1">
                     {s.label}

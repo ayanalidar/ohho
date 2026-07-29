@@ -19,6 +19,10 @@ import { AuthModal } from "@/components/ohho/AuthModal";
 import { UserDashboard } from "@/components/ohho/UserDashboard";
 import { AdminPanel } from "@/components/ohho/AdminPanel";
 import { StandalonePageBar } from "@/components/ohho/StandalonePageBar";
+import {
+  TodaySpecialBanner, LiveOrderTicker, LocationPicker,
+  AchievementBadges, CustomerPhotoWall, CountdownTimer,
+} from "@/components/ohho/HomeFeatures";
 import { AnimatePresence, motion } from "framer-motion";
 
 type View = "home" | "company" | "menu" | "order" | "franchise" | "catering";
@@ -84,10 +88,16 @@ export default function Home() {
             >
               {view === "home" && (
                 <>
+                  <TodaySpecialBanner />
                   <HeroSpotlight />
+                  <LiveOrderTicker />
+                  <LocationPicker />
+                  <AchievementBadges />
                   <GenreTimeline />
                   <VirtualTour3D />
+                  <CustomerPhotoWall />
                   <LiveKitchenView />
+                  <CountdownTimer />
                   <RewardsSection />
                 </>
               )}

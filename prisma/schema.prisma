@@ -31,6 +31,7 @@ model User {
   franchiseLeads FranchiseLead[]
   cateringInquiries CateringInquiry[]
   location      Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  achievements  UserAchievement[]
 }
 
 model Order {
@@ -194,7 +195,32 @@ model Location {
   prepTimeExtra   String   @default("0 min")
   image           String
   active          Boolean  @default(true)
+  opensOn         DateTime? // for coming-soon locations — countdown target
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   users           User[]
+}
+
+model TodaySpecial {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  code        String?  // promo code
+  badge       String   @default("🔥 Today's Special")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserAchievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug        String   // first-order | 10-orders | gold-tier | reviewer | etc.
+  name        String
+  description String
+  icon        String
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, slug])
 }

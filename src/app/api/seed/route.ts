@@ -91,6 +91,41 @@ export async function GET() {
       });
     }
 
+    // 4b. Seed a coming-soon location with countdown
+    const comingSoon = await db.location.findUnique({ where: { slug: "muzaffarnagar" } });
+    if (!comingSoon) {
+      await db.location.create({
+        data: {
+          slug: "muzaffarnagar",
+          name: "OHHO Cart — Muzaffarnagar",
+          city: "Muzaffarnagar",
+          area: "Coming Soon — Next Launch",
+          status: "coming-soon",
+          rating: 0,
+          customers: 0,
+          deliveryRadiusKm: 5,
+          prepTimeExtra: "0 min",
+          image: "/ohho-images/ohho-cart-3.png",
+          active: true,
+          opensOn: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+        },
+      });
+    }
+
+    // 4c. Seed today's special
+    const existingSpecial = await db.todaySpecial.findFirst({ where: { active: true } });
+    if (!existingSpecial) {
+      await db.todaySpecial.create({
+        data: {
+          title: "Buy 1 Get 1 Free on all Burgers",
+          description: "Every Tuesday — buy any burger, get a Crispy Chicken Burger free. Use code at checkout.",
+          code: "BOGO-TUE",
+          badge: "🔥 Today's Special",
+          active: true,
+        },
+      });
+    }
+
     // 5. Create admin
     const adminEmail = "admin@ohhofoods.com";
     let admin = await db.user.findUnique({ where: { email: adminEmail } });
