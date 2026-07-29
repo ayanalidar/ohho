@@ -10,8 +10,10 @@ import { MenuMagnifier } from "@/components/ohho/MenuMagnifier";
 import { GenreTimeline } from "@/components/ohho/GenreTimeline";
 import { VirtualTour3D } from "@/components/ohho/VirtualTour3D";
 import { OrderingPlatform } from "@/components/ohho/OrderingPlatform";
-import { DeliveryTracker } from "@/components/ohho/DeliveryTracker";
+import { LiveKitchenView } from "@/components/ohho/LiveKitchenView";
 import { RewardsSection } from "@/components/ohho/RewardsSection";
+import { FranchiseTab } from "@/components/ohho/FranchiseTab";
+import { CateringTab } from "@/components/ohho/CateringTab";
 import { Footer } from "@/components/ohho/Footer";
 import { AuthModal } from "@/components/ohho/AuthModal";
 import { UserDashboard } from "@/components/ohho/UserDashboard";
@@ -19,9 +21,9 @@ import { AdminPanel } from "@/components/ohho/AdminPanel";
 import { StandalonePageBar } from "@/components/ohho/StandalonePageBar";
 import { AnimatePresence, motion } from "framer-motion";
 
-type View = "home" | "company" | "menu" | "order";
+type View = "home" | "company" | "menu" | "order" | "franchise" | "catering";
 
-const VIEWS: View[] = ["home", "company", "menu", "order"];
+const VIEWS: View[] = ["home", "company", "menu", "order", "franchise", "catering"];
 
 export default function Home() {
   const [view, setView] = useState<View>("home");
@@ -42,7 +44,6 @@ export default function Home() {
       setPendingScroll(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      // scroll target on home
       if (view !== "home") {
         setView("home");
         setPendingScroll(target);
@@ -52,7 +53,6 @@ export default function Home() {
     }
   }, [view]);
 
-  // After switching to home for a scroll target, perform the scroll
   useEffect(() => {
     if (view === "home" && pendingScroll) {
       const t = setTimeout(() => {
@@ -87,40 +87,35 @@ export default function Home() {
                   <HeroSpotlight />
                   <GenreTimeline />
                   <VirtualTour3D />
-                  <DeliveryTracker />
+                  <LiveKitchenView />
                   <RewardsSection />
                 </>
               )}
 
               {view === "company" && (
                 <div className="pt-[72px]">
-                  <StandalonePageBar
-                    title="Company"
-                    subtitle="OHHO Food Ventures · Operator-first QSR brand"
-                  />
+                  <StandalonePageBar title="Company" subtitle="OHHO Food Ventures · Operator-first QSR brand" />
                   <AboutVentures />
                 </div>
               )}
 
               {view === "menu" && (
                 <div className="pt-[72px]">
-                  <StandalonePageBar
-                    title="Menu"
-                    subtitle="Hover any dish for 4× magnifier detail"
-                  />
+                  <StandalonePageBar title="Menu" subtitle="Hover any dish for 4× magnifier detail" />
                   <MenuMagnifier />
                 </div>
               )}
 
               {view === "order" && (
                 <div className="pt-[72px]">
-                  <StandalonePageBar
-                    title="Order Online"
-                    subtitle="Build your cart, check out, track live"
-                  />
+                  <StandalonePageBar title="Order Online" subtitle="Build your cart, check out, track live" />
                   <OrderingPlatform onRequireAuth={() => openAuth("signup")} />
                 </div>
               )}
+
+              {view === "franchise" && <FranchiseTab />}
+
+              {view === "catering" && <CateringTab />}
             </motion.div>
           </AnimatePresence>
 

@@ -12,7 +12,7 @@ export async function GET() {
     // Refresh loyalty points from DB
     const dbUser = await db.user.findUnique({
       where: { id: payload.id },
-      select: { loyaltyPoints: true, role: true, name: true, email: true },
+      select: { loyaltyPoints: true, role: true, name: true, email: true, walletBalance: true, referralCode: true, phone: true },
     });
     if (!dbUser) return NextResponse.json({ user: null });
     const user: SessionUser = {
@@ -21,6 +21,9 @@ export async function GET() {
       name: dbUser.name,
       role: dbUser.role as "CUSTOMER" | "ADMIN",
       loyaltyPoints: dbUser.loyaltyPoints,
+      walletBalance: dbUser.walletBalance,
+      referralCode: dbUser.referralCode,
+      phone: dbUser.phone,
     };
     return NextResponse.json({ user });
   } catch (e: any) {

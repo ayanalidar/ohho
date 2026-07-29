@@ -12,6 +12,8 @@ const NAV_TABS = [
   { view: "company", label: "Company" },
   { view: "menu", label: "Menu" },
   { view: "order", label: "Order Online" },
+  { view: "franchise", label: "Franchise" },
+  { view: "catering", label: "Catering" },
 ] as const;
 
 const NAV_SCROLL = [
@@ -139,7 +141,7 @@ export function Nav({
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
-                          onOpenUserDash();
+                          setTimeout(() => onOpenUserDash(), 50);
                         }}
                         className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream hover:bg-ohho-orange/10 text-left"
                       >
@@ -150,7 +152,7 @@ export function Nav({
                         <button
                           onClick={() => {
                             setUserMenuOpen(false);
-                            onOpenAdmin();
+                            setTimeout(() => onOpenAdmin(), 50);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-ohho-cream hover:bg-ohho-red/10 text-left"
                         >

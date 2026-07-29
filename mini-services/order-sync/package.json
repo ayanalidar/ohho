@@ -1,0 +1,14 @@
+{
+  "name": "ohho-order-sync",
+  "module": "index.ts",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22"
+  }
+}

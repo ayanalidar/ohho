@@ -20,14 +20,15 @@ import {
   Trash2,
   ArrowRight,
 } from "lucide-react";
-import { menuItems, categories, type MenuItem } from "@/data/menu";
+import { menuItems, categories, type MenuItem, ohhoLocations } from "@/data/menu";
 import { useCart, cartSubtotal, cartCount } from "@/store/cart";
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { useNav } from "@/components/ohho/nav-context";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_METHODS = [
-  { id: "upi", label: "UPI / Wallet", icon: Wallet },
+  { id: "upi", label: "UPI / QR", icon: Wallet },
+  { id: "wallet", label: "OHHO Wallet", icon: Wallet },
   { id: "card", label: "Credit / Debit", icon: CreditCard },
   { id: "cod", label: "Cash on Delivery", icon: Banknote },
 ];
@@ -40,18 +41,26 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
   const [pay, setPay] = useState("upi");
   const [mode, setMode] = useState<"delivery" | "pickup">("delivery");
   const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [locationId, setLocationId] = useState<string>(ohhoLocations[0]?.id || "kairana");
+  const [useWallet, setUseWallet] = useState(false);
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [upiData, setUpiData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
   const [addOnModal, setAddOnModal] = useState<MenuItem | null>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, string[]>>({});
 
-  const { lines, add, setQty, remove, clear } = useCart();
-  const { user } = useAuth();
+  const { lines, add, setQty, remove, clear, close: closeCart } = useCart();
+  const { user, refresh } = useAuth();
   const { navigate } = useNav();
   const subtotal = cartSubtotal(lines);
   const count = cartCount(lines);
   const deliveryFee = mode === "delivery" && subtotal > 0 ? (subtotal > 400 ? 0 : 39) : 0;
   const taxes = Math.round(subtotal * 0.05);
-  const total = subtotal + deliveryFee + taxes;
+  const grossTotal = subtotal + deliveryFee + taxes;
+  const walletBalanceRupees = user ? user.walletBalance / 100 : 0;
+  const walletDebit = useWallet ? Math.min(walletBalanceRupees, grossTotal) : 0;
+  const total = grossTotal - walletDebit;
 
   const items = useMemo(
     () => menuItems.filter((m) => m.category === cat && !m.isAddOn),
@@ -67,6 +76,23 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
     }
     if (mode === "delivery" && !address.trim()) {
       return;
+    }
+    // For UPI payment: show QR modal first, create order after "I've Paid" confirmation
+    if (pay === "upi" && !showUpiModal) {
+      // Close cart drawer so it doesn't cover the UPI modal
+      closeCart();
+      // Fetch UPI intent + QR
+      try {
+        const tempOrderId = "OHHO-PREVIEW-" + Date.now().toString(36).toUpperCase();
+        const res = await fetch(`/api/upi-payment?amount=${total}&orderId=${tempOrderId}`);
+        const data = await res.json();
+        setUpiData(data);
+        setShowUpiModal(true);
+        return; // wait for user to confirm payment
+      } catch (e: any) {
+        alert("Failed to generate UPI QR: " + e.message);
+        return;
+      }
     }
     setPlacing(true);
     try {
@@ -87,7 +113,9 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
         mode,
         address: mode === "delivery" ? address : null,
         paymentMethod: pay,
-        notes: null,
+        notes: notes || null,
+        locationId,
+        useWallet,
       };
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -101,7 +129,10 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
         invoiceNumber: data.order.invoiceNumber || "—",
         earnedPoints: data.earnedPoints || 0,
       });
+      setShowUpiModal(false);
+      setUpiData(null);
       clear();
+      await refresh(); // refresh session to update wallet balance + loyalty points
     } catch (e: any) {
       alert(e?.message || "Failed to place order");
     } finally {
@@ -454,8 +485,32 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                     )}
                   </div>
 
+                  {/* Location selector */}
+                  <div className="mt-5">
+                    <label className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-1.5 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> Order from
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {ohhoLocations.map((loc) => (
+                        <button
+                          key={loc.id}
+                          onClick={() => setLocationId(loc.id)}
+                          className={cn(
+                            "p-2 rounded-md text-[11px] font-semibold border transition-all text-left",
+                            locationId === loc.id
+                              ? "bg-ohho-orange/20 text-ohho-orange border-ohho-orange"
+                              : "bg-transparent text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/50"
+                          )}
+                        >
+                          <div className="font-bold truncate">{loc.city}</div>
+                          <div className="text-[9px] opacity-80">{loc.area.split(" — ")[0]}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Mode toggle */}
-                  <div className="mt-5 grid grid-cols-2 gap-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setMode("delivery")}
                       className={cn(
@@ -495,6 +550,41 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                         className="mt-1 w-full p-3 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 resize-none"
                         rows={3}
                       />
+                    </div>
+                  )}
+
+                  {/* Order notes */}
+                  <div className="mt-3">
+                    <label className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">
+                      Special instructions (optional)
+                    </label>
+                    <input
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="e.g. less spicy, extra crispy, no onions"
+                      className="mt-1 w-full px-3 py-2.5 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-sm placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50"
+                    />
+                  </div>
+
+                  {/* Wallet toggle */}
+                  {user && user.walletBalance > 0 && (
+                    <div className="mt-3 p-3 rounded-lg bg-ohho-gold/8 border border-ohho-gold/20 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-ohho-cream">Use OHHO Wallet</div>
+                        <div className="text-[10px] text-ohho-cream-dim">
+                          Balance: ₹{walletBalanceRupees.toFixed(2)} · Save ₹{walletDebit.toFixed(2)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setUseWallet((v) => !v)}
+                        className={cn(
+                          "relative h-6 w-11 rounded-full transition-colors flex-shrink-0",
+                          useWallet ? "bg-ohho-orange" : "bg-ohho-cream/20"
+                        )}
+                        aria-label="Toggle wallet"
+                      >
+                        <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform", useWallet ? "translate-x-5" : "translate-x-0.5")} />
+                      </button>
                     </div>
                   )}
 
@@ -548,9 +638,15 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                       <span>Taxes &amp; charges (5%)</span>
                       <span>₹{taxes}</span>
                     </div>
+                    {walletDebit > 0 && (
+                      <div className="flex justify-between text-ohho-gold">
+                        <span>Wallet debit</span>
+                        <span>−₹{walletDebit.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-display text-xl text-ohho-gold pt-2 border-t border-ohho-gold/10 mt-2">
-                      <span>Total</span>
-                      <span>₹{total}</span>
+                      <span>Total {walletDebit > 0 && "due"}</span>
+                      <span>₹{total.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -676,6 +772,87 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
               >
                 Done
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* UPI QR Payment Modal */}
+      <AnimatePresence>
+        {showUpiModal && upiData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] grid place-items-center p-4 bg-ohho-black/85 backdrop-blur-md"
+            onClick={() => { setShowUpiModal(false); setUpiData(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 16 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl bg-ohho-black-light border border-ohho-gold/25 shadow-2xl p-6"
+            >
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ohho-orange/15 border border-ohho-orange/40 text-ohho-orange text-[10px] font-bold uppercase tracking-wider">
+                  UPI Payment
+                </div>
+                <div className="mt-4 font-display text-3xl text-ohho-gold">₹{total.toFixed(2)}</div>
+                <div className="text-xs text-ohho-cream-dim mt-1">Scan to pay {upiData.merchantName}</div>
+                <div className="text-[10px] text-ohho-cream-dim mt-0.5">UPI: {upiData.merchantUpi}</div>
+              </div>
+
+              {/* QR code */}
+              <div className="mt-5 grid place-items-center">
+                <div className="bg-white p-3 rounded-xl">
+                  <img
+                    src={upiData.qrImageUrl}
+                    alt="UPI QR code"
+                    className="h-48 w-48"
+                  />
+                </div>
+              </div>
+
+              {/* UPI app deep-links */}
+              <div className="mt-5">
+                <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim mb-2 text-center">
+                  Or pay with an app
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {upiData.upiApps?.map((app: any) => (
+                    <a
+                      key={app.id}
+                      href={app.intent}
+                      className="p-2 rounded-lg bg-ohho-black/50 border border-ohho-gold/15 hover:border-ohho-gold/40 text-center transition-colors"
+                    >
+                      <div className="text-xl mb-0.5">
+                        {app.id === "gpay" ? "🟢" : app.id === "phonepe" ? "🟣" : app.id === "paytm" ? "🔵" : "🟦"}
+                      </div>
+                      <div className="text-[9px] font-semibold text-ohho-cream">{app.name}</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => { setShowUpiModal(false); setUpiData(null); }}
+                  className="flex-1 py-2.5 rounded-md border border-ohho-gold/30 text-ohho-cream text-sm font-semibold hover:bg-ohho-gold/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={placeOrder}
+                  disabled={placing}
+                  className="flex-1 py-2.5 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold text-sm hover:shadow-lg hover:shadow-ohho-orange/40 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {placing ? <><Loader2 className="h-4 w-4 animate-spin" /> Placing…</> : "I've Paid — Place Order"}
+                </button>
+              </div>
+              <div className="mt-3 text-center text-[10px] text-ohho-cream-dim">
+                Tap an app above to open it with amount pre-filled. After paying, tap &quot;I&apos;ve Paid&quot;.
+              </div>
             </motion.div>
           </motion.div>
         )}

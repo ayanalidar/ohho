@@ -12,6 +12,9 @@ export type SessionUser = {
   name: string;
   role: "CUSTOMER" | "ADMIN";
   loyaltyPoints: number;
+  walletBalance: number;
+  referralCode: string;
+  phone: string | null;
 };
 
 export async function signSession(user: SessionUser): Promise<string> {
@@ -21,6 +24,9 @@ export async function signSession(user: SessionUser): Promise<string> {
     name: user.name,
     role: user.role,
     loyaltyPoints: user.loyaltyPoints,
+    walletBalance: user.walletBalance,
+    referralCode: user.referralCode,
+    phone: user.phone,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -37,6 +43,9 @@ export async function verifySession(token: string): Promise<SessionUser | null> 
       name: payload.name as string,
       role: payload.role as "CUSTOMER" | "ADMIN",
       loyaltyPoints: (payload.loyaltyPoints as number) || 0,
+      walletBalance: (payload.walletBalance as number) || 0,
+      referralCode: (payload.referralCode as string) || "",
+      phone: (payload.phone as string) || null,
     };
   } catch {
     return null;

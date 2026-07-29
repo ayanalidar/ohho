@@ -12,6 +12,11 @@ import {
   Clock,
   Loader2,
   RefreshCw,
+  Star,
+  Building2,
+  PartyPopper,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,10 +70,13 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<"dashboard" | "orders" | "users">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "reviews" | "franchise" | "catering">("dashboard");
   const [stats, setStats] = useState<Stats | null>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [franchiseLeads, setFranchiseLeads] = useState<any[]>([]);
+  const [cateringInquiries, setCateringInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
@@ -110,12 +118,45 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
     }
   }, []);
 
+  const loadReviews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/reviews");
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    } catch { setReviews([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadFranchise = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/franchise");
+      const data = await res.json();
+      setFranchiseLeads(data.leads || []);
+    } catch { setFranchiseLeads([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadCatering = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/catering");
+      const data = await res.json();
+      setCateringInquiries(data.inquiries || []);
+    } catch { setCateringInquiries([]); }
+    finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     if (tab === "dashboard") loadStats();
     if (tab === "orders") loadOrders();
     if (tab === "users") loadUsers();
-  }, [open, tab, loadStats, loadOrders, loadUsers]);
+    if (tab === "reviews") loadReviews();
+    if (tab === "franchise") loadFranchise();
+    if (tab === "catering") loadCatering();
+  }, [open, tab, loadStats, loadOrders, loadUsers, loadReviews, loadFranchise, loadCatering]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     const progress =
@@ -186,11 +227,14 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
             </div>
 
             {/* Tabs */}
-            <div className="px-5 pt-4 flex gap-2 border-b border-ohho-gold/10 pb-4">
+            <div className="px-5 pt-4 flex gap-2 border-b border-ohho-gold/10 pb-4 overflow-x-auto ohho-scroll-x">
               {[
                 { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
                 { id: "orders", label: "Orders", icon: ShoppingBag },
                 { id: "users", label: "Users", icon: Users },
+                { id: "reviews", label: "Reviews", icon: Star },
+                { id: "franchise", label: "Franchise", icon: Building2 },
+                { id: "catering", label: "Catering", icon: PartyPopper },
               ].map((t) => {
                 const Icon = t.icon;
                 return (
@@ -222,8 +266,14 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
                 <DashboardView stats={stats} />
               ) : tab === "orders" ? (
                 <OrdersView orders={orders} onStatusChange={updateOrderStatus} />
-              ) : (
+              ) : tab === "users" ? (
                 <UsersView users={users} />
+              ) : tab === "reviews" ? (
+                <ReviewsView reviews={reviews} />
+              ) : tab === "franchise" ? (
+                <FranchiseLeadsView leads={franchiseLeads} />
+              ) : (
+                <CateringView inquiries={cateringInquiries} />
               )}
             </div>
           </motion.aside>
@@ -422,6 +472,135 @@ function UsersView({ users }: { users: AdminUser[] }) {
           </div>
           <div className="text-[10px] text-ohho-cream-dim whitespace-nowrap">
             {new Date(u.createdAt).toLocaleDateString("en-IN")}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReviewsView({ reviews }: { reviews: any[] }) {
+  if (reviews.length === 0) {
+    return (
+      <div className="text-center py-20 text-ohho-cream-dim">
+        <Star className="h-12 w-12 mx-auto text-ohho-cream-dim/40 mb-3" />
+        No reviews yet.
+      </div>
+    );
+  }
+  const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+  return (
+    <div className="space-y-3">
+      <div className="glass-card rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">Average rating</div>
+          <div className="font-display text-3xl text-ohho-gold">{avg.toFixed(2)} ★</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-wider text-ohho-cream-dim">Total reviews</div>
+          <div className="font-display text-3xl text-ohho-cream">{reviews.length}</div>
+        </div>
+      </div>
+      {reviews.map((r) => (
+        <div key={r.id} className="glass-card rounded-xl p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-semibold text-ohho-cream">{r.user?.name || "Anonymous"}</div>
+              <div className="text-[11px] text-ohho-cream-dim">{new Date(r.createdAt).toLocaleString("en-IN")} · Order {r.order?.orderId}</div>
+            </div>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className={cn("h-3.5 w-3.5", i < r.rating ? "text-ohho-gold fill-ohho-gold" : "text-ohho-cream/15")} />
+              ))}
+            </div>
+          </div>
+          {r.text && <p className="mt-2 text-sm text-ohho-cream/80 italic">&ldquo;{r.text}&rdquo;</p>}
+          {r.itemName && <div className="mt-1 text-[11px] text-ohho-gold">Reviewing: {r.itemName}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FranchiseLeadsView({ leads }: { leads: any[] }) {
+  if (leads.length === 0) {
+    return (
+      <div className="text-center py-20 text-ohho-cream-dim">
+        <Building2 className="h-12 w-12 mx-auto text-ohho-cream-dim/40 mb-3" />
+        No franchise applications yet.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {leads.map((l) => (
+        <div key={l.id} className="glass-card rounded-xl p-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-display text-lg text-ohho-cream">{l.name}</div>
+              <div className="text-xs text-ohho-cream-dim">{l.email} · {l.phone}</div>
+            </div>
+            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+              l.status === "NEW" ? "bg-ohho-orange/15 text-ohho-orange border-ohho-orange/40" :
+              l.status === "CONTACTED" ? "bg-ohho-gold/15 text-ohho-gold border-ohho-gold/40" :
+              l.status === "QUALIFIED" ? "bg-ohho-green/15 text-ohho-green border-ohho-green/40" :
+              "bg-ohho-cream/10 text-ohho-cream-dim border-ohho-cream/20"
+            )}>{l.status}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div><span className="text-ohho-cream-dim">City:</span> <span className="text-ohho-cream">{l.city}</span></div>
+            <div><span className="text-ohho-cream-dim">Type:</span> <span className="text-ohho-cream">{l.locationType}</span></div>
+            <div><span className="text-ohho-cream-dim">Investment:</span> <span className="text-ohho-cream">{l.investment}</span></div>
+            <div><span className="text-ohho-cream-dim">Timeline:</span> <span className="text-ohho-cream">{l.timeline}</span></div>
+          </div>
+          {l.message && <div className="mt-2 text-xs text-ohho-cream/70 italic">&ldquo;{l.message}&rdquo;</div>}
+          <div className="mt-2 text-[11px] text-ohho-cream-dim">{new Date(l.createdAt).toLocaleString("en-IN")}</div>
+          <div className="mt-3 flex gap-2">
+            <a href={`tel:${l.phone}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 text-xs font-semibold"><Phone className="h-3 w-3" /> Call</a>
+            <a href={`mailto:${l.email}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-ohho-gold/15 text-ohho-gold border border-ohho-gold/30 text-xs font-semibold"><Mail className="h-3 w-3" /> Email</a>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CateringView({ inquiries }: { inquiries: any[] }) {
+  if (inquiries.length === 0) {
+    return (
+      <div className="text-center py-20 text-ohho-cream-dim">
+        <PartyPopper className="h-12 w-12 mx-auto text-ohho-cream-dim/40 mb-3" />
+        No catering inquiries yet.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {inquiries.map((i) => (
+        <div key={i.id} className="glass-card rounded-xl p-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-display text-lg text-ohho-cream">{i.name}</div>
+              <div className="text-xs text-ohho-cream-dim">{i.email} · {i.phone}</div>
+            </div>
+            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+              i.status === "NEW" ? "bg-ohho-orange/15 text-ohho-orange border-ohho-orange/40" :
+              i.status === "QUOTED" ? "bg-ohho-gold/15 text-ohho-gold border-ohho-gold/40" :
+              i.status === "CONFIRMED" ? "bg-ohho-green/15 text-ohho-green border-ohho-green/40" :
+              "bg-ohho-cream/10 text-ohho-cream-dim border-ohho-cream/20"
+            )}>{i.status}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div><span className="text-ohho-cream-dim">Event:</span> <span className="text-ohho-cream">{i.eventType}</span></div>
+            <div><span className="text-ohho-cream-dim">Date:</span> <span className="text-ohho-cream">{i.eventDate}</span></div>
+            <div><span className="text-ohho-cream-dim">Guests:</span> <span className="text-ohho-cream">{i.guestCount}</span></div>
+            <div><span className="text-ohho-cream-dim">Budget:</span> <span className="text-ohho-cream">{i.budget}</span></div>
+          </div>
+          {i.message && <div className="mt-2 text-xs text-ohho-cream/70 italic">&ldquo;{i.message}&rdquo;</div>}
+          <div className="mt-2 text-[11px] text-ohho-cream-dim">{new Date(i.createdAt).toLocaleString("en-IN")}</div>
+          <div className="mt-3 flex gap-2">
+            <a href={`tel:${i.phone}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 text-xs font-semibold"><Phone className="h-3 w-3" /> Call</a>
+            <a href={`mailto:${i.email}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-ohho-gold/15 text-ohho-gold border border-ohho-gold/30 text-xs font-semibold"><Mail className="h-3 w-3" /> Email</a>
           </div>
         </div>
       ))}

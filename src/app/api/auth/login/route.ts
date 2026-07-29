@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
       name: user.name,
       role: user.role as "CUSTOMER" | "ADMIN",
       loyaltyPoints: user.loyaltyPoints,
+      walletBalance: user.walletBalance,
+      referralCode: user.referralCode,
+      phone: user.phone,
     };
     const token = await signSession(sessionUser);
     const res = NextResponse.json({ user: sessionUser });

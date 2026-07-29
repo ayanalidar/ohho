@@ -19,43 +19,109 @@ model User {
   role          String    @default("CUSTOMER") // CUSTOMER | ADMIN
   addresses     String?   // JSON string of saved addresses
   loyaltyPoints Int       @default(0)
+  walletBalance Int       @default(0) // in paise (₹1 = 100)
+  referralCode  String    @unique
+  referredBy    String?   // referral code of the user who referred them
+  upiId         String?   // editable UPI ID for merchant payments
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   orders        Order[]
+  reviews       Review[]
+  franchiseLeads FranchiseLead[]
+  cateringInquiries CateringInquiry[]
 }
 
 model Order {
   id              String      @id @default(cuid())
-  orderId         String      @unique // human-readable: OHHO-XXXXX-XXXX
+  orderId         String      @unique
   userId          String
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           OrderItem[]
   subtotal        Int
   deliveryFee     Int
   taxes           Int
+  walletDebit     Int         @default(0) // amount debited from wallet
   total           Int
   mode            String      // delivery | pickup
   status          String      @default("PREPARING") // PREPARING | PICKED | ENROUTE | NEAR | ARRIVED | CANCELLED
   address         String?
-  paymentMethod   String      // upi | card | cod
+  paymentMethod   String      // upi | card | cod | wallet
   paymentStatus   String      @default("PAID") // PAID | PENDING | REFUNDED
   etaSeconds      Int         @default(1500)
-  progress        Float       @default(0) // 0..1 — for live tracking
+  progress        Float       @default(0)
   invoiceNumber   String?     @unique
   notes           String?
+  locationId      String?     // which OHHO cart (kairana | shamli)
+  rated           Boolean     @default(false)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  review          Review?
 }
 
 model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  itemId    String  // menu item id
+  itemId    String
   name      String
   emoji     String
   image     String
   price     Int
   qty       Int
-  addOns    String? // JSON string of add-on item ids
+  addOns    String?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  text      String?
+  itemName   String?  // if review is for a specific item
+  itemId    String?
+  createdAt DateTime @default(now())
+}
+
+model FranchiseLead {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String
+  city          String
+  locationType  String   // mall | high-street | station | food-court | other
+  investment    String   // 1.5-3L | 3-5L | 5-10L | 10L+
+  timeline      String   // immediate | 1-3-months | 3-6-months | exploring
+  message       String?
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status        String   @default("NEW") // NEW | CONTACTED | QUALIFIED | REJECTED | CLOSED
+  createdAt     DateTime @default(now())
+}
+
+model CateringInquiry {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String
+  eventType   String   // office-party | wedding | birthday | corporate | other
+  eventDate   String
+  guestCount  Int
+  budget      String   // under-5k | 5-10k | 10-25k | 25k+
+  message     String?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status      String   @default("NEW") // NEW | QUOTED | CONFIRMED | COMPLETED | REJECTED
+  createdAt   DateTime @default(now())
+}
+
+model ReferralRedemption {
+  id          String   @id @default(cuid())
+  referrerId  String   // user who shared the code
+  refereeId   String   // user who used the code
+  code        String
+  orderId     String?  // first order that triggered the reward
+  rewardGiven Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

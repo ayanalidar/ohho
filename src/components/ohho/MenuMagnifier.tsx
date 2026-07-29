@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Flame, Clock, Star, ShoppingCart } from "lucide-react";
+import { Plus, Flame, Clock, Star, ShoppingCart, X } from "lucide-react";
 import { menuItems, type MenuItem } from "@/data/menu";
 import { useCart } from "@/store/cart";
 import { useNav } from "@/components/ohho/nav-context";
@@ -10,8 +10,27 @@ import { cn } from "@/lib/utils";
 
 export function MenuMagnifier() {
   const [activeTag, setActiveTag] = useState<string>("All");
+  const [soldOut, setSoldOut] = useState<Set<string>>(new Set());
+  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
   const add = useCart((s) => s.add);
   const { navigate } = useNav();
+
+  useEffect(() => {
+    fetch("/api/admin/menu").then(r => r.json()).then(d => setSoldOut(new Set(d.soldOut || []))).catch(() => {});
+    // Fetch ratings (in a real app this would be aggregated server-side; here we fetch all reviews)
+    fetch("/api/reviews?limit=200").then(r => r.json()).then(d => {
+      const map: Record<string, { avg: number; count: number }> = {};
+      for (const r of d.reviews || []) {
+        if (r.itemId) {
+          if (!map[r.itemId]) map[r.itemId] = { avg: 0, count: 0 };
+          map[r.itemId].avg += r.rating;
+          map[r.itemId].count += 1;
+        }
+      }
+      for (const k in map) map[k].avg = map[k].avg / map[k].count;
+      setRatings(map);
+    }).catch(() => {});
+  }, []);
 
   const tags = useMemo(() => ["All", "Signature", "Bestseller", "Trending", "Veg", "Spicy"], []);
   const filtered = useMemo(() => {
@@ -74,13 +93,18 @@ export function MenuMagnifier() {
               transition={{ duration: 0.35, delay: (i % 3) * 0.05 }}
               className="glass-card glass-card-hover rounded-2xl p-5 flex flex-col"
             >
-              <div className="mb-4 aspect-[4/3] overflow-hidden rounded-lg bg-ohho-black-light">
+              <div className="mb-4 aspect-[4/3] overflow-hidden rounded-lg bg-ohho-black-light relative">
                 <img
                   src={item.image}
                   alt={item.name}
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                  className={cn("h-full w-full object-cover transition-transform duration-500 hover:scale-105", soldOut.has(item.id) && "grayscale opacity-50")}
                 />
+                {soldOut.has(item.id) && (
+                  <div className="absolute inset-0 grid place-items-center">
+                    <span className="px-3 py-1.5 rounded-md bg-ohho-black/80 text-ohho-red text-xs font-bold uppercase tracking-wider border border-ohho-red/40">Sold out today</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-start justify-between gap-3">
@@ -119,6 +143,14 @@ export function MenuMagnifier() {
                 )}
               </div>
 
+              {/* Rating badge */}
+              {ratings[item.id] && ratings[item.id].count > 0 && (
+                <div className="mt-1.5 inline-flex items-center gap-1 text-xs text-ohho-gold">
+                  <Star className="h-3 w-3 fill-ohho-gold" />
+                  {ratings[item.id].avg.toFixed(1)} · {ratings[item.id].count} review{ratings[item.id].count !== 1 ? "s" : ""}
+                </div>
+              )}
+
               <p className="mt-3 text-sm text-ohho-cream/70 leading-relaxed line-clamp-2">
                 {item.description}
               </p>
@@ -152,10 +184,19 @@ export function MenuMagnifier() {
                 </div>
                 <button
                   onClick={() => add(item)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black font-bold text-sm hover:shadow-lg hover:shadow-ohho-orange/40 transition-shadow"
+                  disabled={soldOut.has(item.id)}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-4 py-2.5 rounded-md font-bold text-sm transition-shadow",
+                    soldOut.has(item.id)
+                      ? "bg-ohho-cream/5 text-ohho-cream-dim cursor-not-allowed"
+                      : "bg-gradient-to-r from-ohho-orange to-ohho-orange-deep text-ohho-black hover:shadow-lg hover:shadow-ohho-orange/40"
+                  )}
                 >
-                  <ShoppingCart className="h-4 w-4" />
-                  Add
+                  {soldOut.has(item.id) ? (
+                    <><X className="h-4 w-4" /> Sold out</>
+                  ) : (
+                    <><ShoppingCart className="h-4 w-4" /> Add</>
+                  )}
                 </button>
               </div>
             </motion.article>

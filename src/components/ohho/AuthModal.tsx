@@ -23,6 +23,7 @@ export function AuthModal({
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +31,12 @@ export function AuthModal({
     if (open) {
       setMode(defaultMode);
       setError(null);
+      // Pre-fill referral code from URL ?ref= param
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get("ref");
+        if (ref) setReferralCode(ref.toUpperCase());
+      }
     }
   }, [open, defaultMode]);
 
@@ -41,7 +48,7 @@ export function AuthModal({
       const endpoint = mode === "signup" ? "/api/auth/signup" : "/api/auth/login";
       const body =
         mode === "signup"
-          ? { email, password, name, phone }
+          ? { email, password, name, phone, referralCode }
           : { email, password };
       const res = await fetch(endpoint, {
         method: "POST",
@@ -173,6 +180,20 @@ export function AuthModal({
                       className="w-full pl-10 pr-3 py-2.5 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 text-sm"
                     />
                   </div>
+                </div>
+              )}
+
+              {mode === "signup" && (
+                <div>
+                  <label className="text-[11px] uppercase tracking-wider text-ohho-cream-dim">
+                    Referral code (optional — both get 100 pts)
+                  </label>
+                  <input
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    placeholder="OHHO-XXXXXX"
+                    className="mt-1 w-full px-3 py-2.5 rounded-md bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream placeholder:text-ohho-cream-dim/50 focus:outline-none focus:border-ohho-orange/50 text-sm font-mono"
+                  />
                 </div>
               )}
 

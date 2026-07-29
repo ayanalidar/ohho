@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ orders });
 }
 
-// PATCH /api/admin/orders — update order status
+// PATCH /api/admin/orders — update order status + broadcast via WebSocket
 export async function PATCH(req: NextRequest) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,5 +38,22 @@ export async function PATCH(req: NextRequest) {
       progress: typeof progress === "number" ? Number(progress) : undefined,
     },
   });
+
+  // Broadcast the status update via the order-sync WebSocket service
+  // (fire-and-forget — don't block the response on the socket call)
+  try {
+    const io = await import("socket.io-client").then((m) => m.io);
+    const socket = io("http://localhost:3003/", { path: "/", transports: ["websocket"] });
+    socket.emit("order:status", {
+      orderId: updated.orderId,
+      status: updated.status,
+      progress: updated.progress,
+    });
+    setTimeout(() => socket.disconnect(), 500);
+  } catch (e) {
+    // WebSocket broadcast failure is non-fatal
+    console.warn("Failed to broadcast order status via WS:", e);
+  }
+
   return NextResponse.json({ order: updated });
 }

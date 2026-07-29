@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { verifySession, SESSION_COOKIE } from "@/lib/auth";
+import { verifySession, SESSION_COOKIE, signSession } from "@/lib/auth";
+import type { SessionUser } from "@/lib/auth";
 
 function genOrderId() {
   return (
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     const where = all ? {} : { userId: user.id };
     const orders = await db.order.findMany({
       where,
-      include: { items: true },
+      include: { items: true, review: true },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ orders });
@@ -52,13 +53,35 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json();
-    const { items, subtotal, deliveryFee, taxes, total, mode, address, paymentMethod, notes } = body || {};
+    const {
+      items,
+      subtotal,
+      deliveryFee,
+      taxes,
+      total,
+      mode,
+      address,
+      paymentMethod,
+      notes,
+      locationId,
+      useWallet,
+    } = body || {};
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
     if (!subtotal || !total) {
       return NextResponse.json({ error: "Missing totals" }, { status: 400 });
+    }
+
+    // Handle wallet debit
+    let walletDebit = 0;
+    let finalTotal = Number(total);
+    let updatedWalletBalance = user.walletBalance;
+    if (useWallet && user.walletBalance > 0) {
+      walletDebit = Math.min(user.walletBalance, Math.round(Number(total) * 100));
+      finalTotal = Number(total) - walletDebit / 100;
+      updatedWalletBalance = user.walletBalance - walletDebit;
     }
 
     const order = await db.order.create({
@@ -68,7 +91,8 @@ export async function POST(req: NextRequest) {
         subtotal: Number(subtotal),
         deliveryFee: Number(deliveryFee || 0),
         taxes: Number(taxes || 0),
-        total: Number(total),
+        walletDebit,
+        total: Math.round(finalTotal * 100) / 100,
         mode: String(mode || "delivery"),
         status: "PREPARING",
         address: address ? String(address) : null,
@@ -78,6 +102,7 @@ export async function POST(req: NextRequest) {
         etaSeconds: 1500,
         progress: 0,
         notes: notes ? String(notes) : null,
+        locationId: locationId ? String(locationId) : null,
         items: {
           create: items.map((it: any) => ({
             itemId: String(it.itemId),
@@ -93,8 +118,16 @@ export async function POST(req: NextRequest) {
       include: { items: true },
     });
 
+    // Debit wallet if used
+    if (walletDebit > 0) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { walletBalance: updatedWalletBalance },
+      });
+    }
+
     // Award loyalty points: 1 point per ₹10 spent (basic tier)
-    const earnedPoints = Math.floor(Number(total) / 10);
+    const earnedPoints = Math.floor(finalTotal / 10);
     if (earnedPoints > 0) {
       await db.user.update({
         where: { id: user.id },
@@ -102,7 +135,66 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ order, earnedPoints });
+    // If this is the user's first order AND they were referred, double the referrer bonus
+    const userOrdersCount = await db.order.count({ where: { userId: user.id } });
+    if (userOrdersCount === 1 && user.referralCode) {
+      // Wait — referralCode is the user's OWN code. We need referredBy.
+      // Fetch from DB since SessionUser doesn't carry referredBy
+      const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { referredBy: true } });
+      if (dbUser?.referredBy) {
+        const referrer = await db.user.findUnique({ where: { referralCode: dbUser.referredBy } });
+        if (referrer) {
+          await db.user.update({
+            where: { id: referrer.id },
+            data: { loyaltyPoints: { increment: 100 } },
+          });
+          await db.referralRedemption.create({
+            data: {
+              referrerId: referrer.id,
+              refereeId: user.id,
+              code: dbUser.referredBy,
+              orderId: order.id,
+              rewardGiven: true,
+            },
+          });
+        }
+      }
+    }
+
+    // Re-sign session with updated wallet balance + loyalty points
+    const freshUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { walletBalance: true, loyaltyPoints: true, role: true, name: true, email: true, referralCode: true, phone: true },
+    });
+    if (freshUser) {
+      const sessionUser: SessionUser = {
+        id: user.id,
+        email: freshUser.email,
+        name: freshUser.name,
+        role: freshUser.role as "CUSTOMER" | "ADMIN",
+        loyaltyPoints: freshUser.loyaltyPoints,
+        walletBalance: freshUser.walletBalance,
+        referralCode: freshUser.referralCode,
+        phone: freshUser.phone,
+      };
+      const newToken = await signSession(sessionUser);
+      const res = NextResponse.json({
+        order,
+        earnedPoints,
+        walletUsed: walletDebit / 100,
+        newWalletBalance: freshUser.walletBalance / 100,
+        sessionUser,
+      });
+      res.cookies.set(SESSION_COOKIE, newToken, {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60,
+        path: "/",
+      });
+      return res;
+    }
+
+    return NextResponse.json({ order, earnedPoints, walletUsed: walletDebit / 100 });
   } catch (e: any) {
     console.error("create order error", e);
     return NextResponse.json({ error: e?.message }, { status: 500 });

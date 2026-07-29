@@ -3,6 +3,10 @@ import { db } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_MAX_AGE, type SessionUser } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
+function genReferralCode(name: string) {
+  return "OHHO-" + name.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6) + Math.floor(Math.random() * 90 + 10);
+}
+
 // GET /api/seed — one-time setup: creates admin user, sample customer, sample orders
 export async function GET() {
   try {
@@ -18,6 +22,8 @@ export async function GET() {
           phone: "+91 7006712347",
           role: "ADMIN",
           loyaltyPoints: 0,
+          walletBalance: 0,
+          referralCode: genReferralCode("OHHOADMIN"),
         },
       });
     }
@@ -34,6 +40,12 @@ export async function GET() {
           phone: "+91 9650443642",
           role: "CUSTOMER",
           loyaltyPoints: 437,
+          walletBalance: 55000, // ₹550 in paise
+          referralCode: genReferralCode("DemoCustomer"),
+          addresses: JSON.stringify([
+            { id: "addr1", label: "Home", line: "12 Shamli Rd, Kairana, UP 247774", pincode: "247774" },
+            { id: "addr2", label: "Work", line: "Shop 4, Main Market, Shamli, UP 247774", pincode: "247774" },
+          ]),
         },
       });
     } else {
@@ -98,6 +110,9 @@ export async function GET() {
       name: admin.name,
       role: "ADMIN",
       loyaltyPoints: admin.loyaltyPoints,
+      walletBalance: admin.walletBalance,
+      referralCode: admin.referralCode,
+      phone: admin.phone,
     };
     const token = await signSession(sessionUser);
     const res = NextResponse.json({

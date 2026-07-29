@@ -2,6 +2,7 @@
 // All prices in INR. Images are AI-generated premium food photography stored locally.
 
 export type MenuItem = {
+  available?: boolean; // sold-out toggle
   id: string;
   name: string;
   emoji: string;
@@ -416,3 +417,48 @@ export const customerStories = [
     orders: 19,
   },
 ];
+
+// OHHO cart locations — for multi-location ordering
+export type OhhoLocation = {
+  id: string;
+  name: string;
+  city: string;
+  area: string;
+  status: "operational" | "coming-soon";
+  rating: number;
+  customers: number;
+  deliveryRadiusKm: number;
+  prepTimeExtra: string;
+  image: string;
+};
+
+export const ohhoLocations: OhhoLocation[] = [
+  {
+    id: "kairana",
+    name: "OHHO Cart — Kairana",
+    city: "Kairana",
+    area: "Nawab Market — Flagship",
+    status: "operational",
+    rating: 4.9,
+    customers: 6500,
+    deliveryRadiusKm: 5,
+    prepTimeExtra: "0 min",
+    image: "/ohho-images/ohho-cart-1.png",
+  },
+  {
+    id: "shamli",
+    name: "OHHO Cart — Shamli",
+    city: "Shamli",
+    area: "Main Road — Test Cart #2",
+    status: "operational",
+    rating: 4.8,
+    customers: 3800,
+    deliveryRadiusKm: 5,
+    prepTimeExtra: "2 min",
+    image: "/ohho-images/ohho-cart-2.png",
+  },
+];
+
+// Default merchant UPI ID (editable by admin in settings)
+export const DEFAULT_MERCHANT_UPI = "ohhofoods@upi";
+export const MERCHANT_NAME = "OHHO Food Ventures";
