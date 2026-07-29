@@ -1,32 +1,40 @@
-# OHHO BURGERS — GitHub Deployment Setup
+# OHHO BURGERS — GitHub Repository
 
-## To deploy this project to GitHub:
+**Live repo:** https://github.com/ayanalidar/ohho
 
-### Option 1: Using GitHub CLI
+## Local Development
+
 ```bash
-# Install gh CLI, then:
-gh auth login
-gh repo create ohho-burgers --public --source=. --push
+# Clone
+git clone https://github.com/ayanalidar/ohho.git
+cd ohho
+
+# Install dependencies
+bun install
+
+# Set up the database
+bun run db:push
+
+# Seed the database (creates admin + demo users + menu items)
+# Visit http://localhost:3000/api/seed in your browser
+
+# Start the dev server
+bun run dev
 ```
 
-### Option 2: Manual setup
-1. Create a new repo on GitHub: https://github.com/new
-   - Name: `ohho-burgers`
-   - Public or Private (your choice)
-   - Don't initialize with README (we have one)
+## Demo Credentials
+- **Admin:** admin@ohhofoods.com / admin123
+- **Customer:** demo@ohhofoods.com / demo123
+- **Operator:** kairana@ohhofoods.com / operator123
 
-2. Add the remote and push:
-```bash
-git remote add origin git@github.com:YOUR_USERNAME/ohho-burgers.git
-# or use HTTPS:
-git remote add origin https://github.com/YOUR_USERNAME/ohho-burgers.git
+## Tech Stack
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS 4 + shadcn/ui
+- Prisma ORM (SQLite)
+- Three.js / React Three Fiber (3D tour)
+- Framer Motion (animations)
+- Socket.io (real-time order sync)
+- Zustand (cart state)
+- PWA (installable, offline menu)
 
-git branch -M main
-git push -u origin main
-```
-
-### SSH Key (already generated)
-Add this public key to GitHub → Settings → SSH and GPG keys → New SSH key:
-```
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIYM46fVHYiBgu60IRalbprM/Q51TkkpjOOyrf0aS5fD admin@ohhofoods.com
-```
+## Made & maintained by: GuardianX
