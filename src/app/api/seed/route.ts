@@ -258,66 +258,35 @@ export async function GET() {
       maxAge: SESSION_MAX_AGE,
       path: "/",
     });
+
+    // 10. Seed site content (editable CMS)
+    const SITE_CONTENT_SEED: Array<{key: string, value: string, type: string, label: string, page: string, section: string}> = [
+      { key: "hero.eyebrow", value: "India's Fastest-Growing Premium QSR", type: "text", label: "Hero Eyebrow", page: "home", section: "hero" },
+      { key: "hero.brand", value: "OHHO", type: "text", label: "Hero Brand Name", page: "home", section: "hero" },
+      { key: "hero.brand2", value: "BURGERS", type: "text", label: "Hero Brand Name 2", page: "home", section: "hero" },
+      { key: "hero.byline", value: "By OHHO Food Ventures", type: "text", label: "Hero Byline", page: "home", section: "hero" },
+      { key: "hero.tagline", value: "Chicken burgers, pizzas, sandwiches & shakes — built for India, engineered for fast returns, delivered to your door with live tracking.", type: "textarea", label: "Hero Tagline", page: "home", section: "hero" },
+      { key: "footer.made_by", value: "GuardianX", type: "text", label: "Made & Maintained By", page: "global", section: "footer" },
+      { key: "footer.copyright", value: "© 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.", type: "text", label: "Copyright Text", page: "global", section: "footer" },
+      { key: "footer.tagline", value: "Live Premium.", type: "text", label: "Footer Tagline", page: "global", section: "footer" },
+      { key: "company.title", value: "OHHO FOOD VENTURES", type: "text", label: "Company Title", page: "company", section: "hero" },
+      { key: "company.tagline", value: "Live Premium", type: "text", label: "Company Tagline", page: "company", section: "hero" },
+      { key: "menu.title", value: "The Menu, end to end.", type: "text", label: "Menu Title", page: "menu", section: "header" },
+      { key: "order.title", value: "Build your order, check out.", type: "text", label: "Order Title", page: "order", section: "header" },
+      { key: "franchise.title", value: "From cart to passive income.", type: "text", label: "Franchise Title", page: "franchise", section: "hero" },
+      { key: "catering.title", value: "OHHO for your event.", type: "text", label: "Catering Title", page: "catering", section: "hero" },
+      { key: "contact.email", value: "sales@ohhofoods.com", type: "text", label: "Contact Email", page: "global", section: "contact" },
+      { key: "contact.phone1", value: "+91 7006712347", type: "text", label: "Contact Phone 1", page: "global", section: "contact" },
+      { key: "contact.website", value: "www.ohhofoods.com", type: "text", label: "Website", page: "global", section: "contact" },
+      { key: "contact.instagram", value: "@ohhofoodventures", type: "text", label: "Instagram", page: "global", section: "contact" },
+    ];
+    for (const c of SITE_CONTENT_SEED) {
+      await db.siteContent.upsert({ where: { key: c.key }, create: c, update: {} });
+    }
+
     return res;
   } catch (e: any) {
     console.error("seed error", e);
     return NextResponse.json({ error: e?.message || "Seed failed" }, { status: 500 });
   }
 }
-
-    // 10. Seed site content (editable CMS)
-    const SITE_CONTENT_SEED: Array<{key: string, value: string, type: string, label: string, page: string, section: string}> = [
-      // Hero
-      { key: "hero.eyebrow", value: "India's Fastest-Growing Premium QSR", type: "text", label: "Hero Eyebrow", page: "home", section: "hero" },
-      { key: "hero.brand", value: "OHHO", type: "text", label: "Hero Brand Name", page: "home", section: "hero" },
-      { key: "hero.brand2", value: "BURGERS", type: "text", label: "Hero Brand Name 2", page: "home", section: "hero" },
-      { key: "hero.tagline", value: "Live Premium. Chicken burgers, pizzas, sandwiches & shakes — built for India, engineered for fast returns, delivered to your door with live tracking.", type: "textarea", label: "Hero Tagline", page: "home", section: "hero" },
-      { key: "hero.byline", value: "By OHHO Food Ventures", type: "text", label: "Hero Byline", page: "home", section: "hero" },
-      { key: "hero.cta1", value: "Order Now", type: "text", label: "Hero CTA 1", page: "home", section: "hero" },
-      { key: "hero.cta2", value: "Explore Menu", type: "text", label: "Hero CTA 2", page: "home", section: "hero" },
-      { key: "hero.cta3", value: "About the Company", type: "text", label: "Hero CTA 3", page: "home", section: "hero" },
-      // Stats
-      { key: "stats.locations", value: "2", type: "text", label: "Locations Tested", page: "home", section: "stats" },
-      { key: "stats.locations_suffix", value: "", type: "text", label: "Locations Suffix", page: "home", section: "stats" },
-      { key: "stats.customers", value: "10000", type: "text", label: "Happy Customers", page: "home", section: "stats" },
-      { key: "stats.customers_suffix", value: "+", type: "text", label: "Customers Suffix", page: "home", section: "stats" },
-      { key: "stats.retention", value: "80", type: "text", label: "Retention Rate", page: "home", section: "stats" },
-      { key: "stats.retention_suffix", value: "%", type: "text", label: "Retention Suffix", page: "home", section: "stats" },
-      { key: "stats.setup", value: "45", type: "text", label: "Setup Time", page: "home", section: "stats" },
-      { key: "stats.setup_suffix", value: " days", type: "text", label: "Setup Suffix", page: "home", section: "stats" },
-      // Footer
-      { key: "footer.made_by", value: "GuardianX", type: "text", label: "Made & Maintained By", page: "global", section: "footer" },
-      { key: "footer.copyright", value: "© 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.", type: "text", label: "Copyright Text", page: "global", section: "footer" },
-      { key: "footer.tagline", value: "Live Premium.", type: "text", label: "Footer Tagline", page: "global", section: "footer" },
-      // Company
-      { key: "company.title", value: "OHHO FOOD VENTURES", type: "text", label: "Company Title", page: "company", section: "hero" },
-      { key: "company.tagline", value: "Live Premium", type: "text", label: "Company Tagline", page: "company", section: "hero" },
-      { key: "company.story", value: "A new-age premium quick-service restaurant brand from Shamli & Kairana, Uttar Pradesh. We blend indulgence with health, built for India's booming QSR sector.", type: "textarea", label: "Company Story", page: "company", section: "hero" },
-      // Menu
-      { key: "menu.title", value: "The Menu, end to end.", type: "text", label: "Menu Title", page: "menu", section: "header" },
-      { key: "menu.subtitle", value: "Burgers, pizzas, sandwiches, buckets, sips & add-ons — every item, every price. Tap Add to drop it in your cart, then head to Order Online to check out.", type: "textarea", label: "Menu Subtitle", page: "menu", section: "header" },
-      // Order
-      { key: "order.title", value: "Build your order, check out.", type: "text", label: "Order Title", page: "order", section: "header" },
-      { key: "order.subtitle", value: "Pick a category, add to cart, customize with add-ons, choose delivery or pickup, pay your way. Orders save to your account — track them live and download invoices.", type: "textarea", label: "Order Subtitle", page: "order", section: "header" },
-      // Franchise
-      { key: "franchise.title", value: "From cart to passive income.", type: "text", label: "Franchise Title", page: "franchise", section: "hero" },
-      { key: "franchise.subtitle", value: "We don't hand over unproven locations. We scout, build, operate, and prove the model ourselves — then offer the winning territory to you.", type: "textarea", label: "Franchise Subtitle", page: "franchise", section: "hero" },
-      // Catering
-      { key: "catering.title", value: "OHHO for your event.", type: "text", label: "Catering Title", page: "catering", section: "hero" },
-      { key: "catering.subtitle", value: "Office lunches, weddings, birthdays, corporate events — we cater them all. Premium burgers, pizzas, buckets & sips at scale. Min 24-hour notice.", type: "textarea", label: "Catering Subtitle", page: "catering", section: "hero" },
-      // Contact
-      { key: "contact.email", value: "sales@ohhofoods.com", type: "text", label: "Contact Email", page: "global", section: "contact" },
-      { key: "contact.phone1", value: "+91 7006712347", type: "text", label: "Contact Phone 1", page: "global", section: "contact" },
-      { key: "contact.phone2", value: "+91 9650443642", type: "text", label: "Contact Phone 2", page: "global", section: "contact" },
-      { key: "contact.phone3", value: "+91 9652852780", type: "text", label: "Contact Phone 3", page: "global", section: "contact" },
-      { key: "contact.website", value: "www.ohhofoods.com", type: "text", label: "Website", page: "global", section: "contact" },
-      { key: "contact.instagram", value: "@ohhofoodventures", type: "text", label: "Instagram", page: "global", section: "contact" },
-    ];
-
-    for (const c of SITE_CONTENT_SEED) {
-      await db.siteContent.upsert({
-        where: { key: c.key },
-        create: c,
-        update: {},
-      });
-    }
