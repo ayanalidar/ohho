@@ -3,9 +3,11 @@
 import { Phone, Mail, Globe, Instagram, MapPin, Flame } from "lucide-react";
 import { contactInfo, testedLocations } from "@/data/menu";
 import { useNav } from "@/components/ohho/nav-context";
+import { useSiteContent } from "@/hooks/use-site-content";
 
 export function Footer() {
   const { navigate } = useNav();
+  const { get } = useSiteContent();
   return (
     <footer className="relative bg-ohho-black-light border-t border-ohho-gold/15 pt-16 pb-8 grain">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
@@ -98,8 +100,8 @@ export function Footer() {
                 ["company", "Company"],
                 ["menu", "Menu"],
                 ["order", "Order Online"],
-                ["timeline", "Genre Timeline"],
-                ["tour", "3D Tour"],
+                ["franchise", "Franchise"],
+                ["catering", "Catering"],
                 ["track", "Track Order"],
                 ["rewards", "Rewards"],
               ].map(([target, label]) => (
@@ -185,12 +187,12 @@ export function Footer() {
         {/* Bottom: copyright */}
         <div className="mt-10 pt-6 border-t border-ohho-gold/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ohho-cream-dim">
           <div>
-            © 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.
+            {get("footer.copyright", "© 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.")}
           </div>
           <div className="flex items-center gap-4">
-            <span>Made &amp; maintained by: <strong className="text-ohho-gold">GuardianX</strong></span>
+            <span>Made &amp; maintained by: <strong className="text-ohho-gold">{get("footer.made_by", "GuardianX")}</strong></span>
             <span>·</span>
-            <span>Live Premium.</span>
+            <span>{get("footer.tagline", "Live Premium.")}</span>
           </div>
         </div>
       </div>

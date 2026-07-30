@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -223,4 +223,28 @@ model UserAchievement {
   unlockedAt  DateTime @default(now())
 
   @@unique([userId, slug])
+}
+
+model CartPhoto {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  image       String
+  category    String   @default("cart")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteContent {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("text")
+  label       String
+  page        String   @default("home")
+  section     String   @default("general")
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 }

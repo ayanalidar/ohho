@@ -17,8 +17,6 @@ const NAV_TABS = [
 ] as const;
 
 const NAV_SCROLL = [
-  { target: "timeline", label: "Timeline" },
-  { target: "tour", label: "3D Tour" },
   { target: "track", label: "Track" },
   { target: "rewards", label: "Rewards" },
 ] as const;

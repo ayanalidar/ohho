@@ -6,6 +6,7 @@ import { ChevronDown, Flame, MapPin, Star, Truck } from "lucide-react";
 import { ohhoStats } from "@/data/menu";
 import { useNav } from "@/components/ohho/nav-context";
 import { AnimatedCounter } from "@/components/ohho/HomeFeatures";
+import { useSiteContent } from "@/hooks/use-site-content";
 
 // Hero images cycle — AI-generated premium OHHO food photography
 const HERO_IMAGES = [
@@ -19,11 +20,12 @@ const HERO_INTERVAL_MS = 4200;
 
 export function HeroSpotlight() {
   const { navigate } = useNav();
+  const { get } = useSiteContent();
   const [idx, setIdx] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);       // spotlight background layer
-  const crosshairRef = useRef<HTMLDivElement>(null); // crosshair element
-  const rafRef = useRef<number | null>(null);      // rAF throttle
+  const bgRef = useRef<HTMLDivElement>(null);
+  const crosshairRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const posRef = useRef({ x: 0.5, y: 0.45 });
 
   // cross-fade timer
@@ -162,21 +164,19 @@ export function HeroSpotlight() {
               transition={{ delay: 0.35, duration: 0.7 }}
             >
               <div className="text-ohho-cream-dim text-sm tracking-[0.4em] uppercase mb-3">
-                By OHHO Food Ventures
+                {get("hero.byline", "By OHHO Food Ventures")}
               </div>
               <h1 className="font-display leading-[0.85] tracking-tight">
                 <span className="block text-ohho-cream text-[clamp(3rem,12vw,11rem)]">
-                  OHHO
+                  {get("hero.brand", "OHHO")}
                 </span>
                 <span className="block text-gradient-ohho text-[clamp(3rem,12vw,11rem)]">
-                  BURGERS
+                  {get("hero.brand2", "BURGERS")}
                 </span>
               </h1>
               <p className="mt-5 sm:mt-6 text-ohho-cream/85 text-base sm:text-xl max-w-2xl font-light">
-                <span className="font-semibold text-ohho-gold">Live Premium.</span>{" "}
-                Chicken burgers, pizzas, sandwiches &amp; shakes — built for India,
-                engineered for fast returns, delivered to your door with live
-                tracking.
+                <span className="font-semibold text-ohho-gold">{get("hero.tagline_prefix", "Live Premium.")}</span>{" "}
+                {get("hero.tagline", "Chicken burgers, pizzas, sandwiches & shakes — built for India, engineered for fast returns, delivered to your door with live tracking.")}
               </p>
             </motion.div>
 

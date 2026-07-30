@@ -19,6 +19,9 @@ import {
   Mail,
   Utensils,
   MapPin,
+  Camera,
+  Plus,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -79,7 +82,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const isOperator = user?.role === "OPERATOR";
-  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "reviews" | "franchise" | "catering" | "menu-items" | "timeline" | "catering-packages" | "locations">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "reviews" | "franchise" | "catering" | "menu-items" | "timeline" | "catering-packages" | "locations" | "cart-photos" | "site-content">("dashboard");
   const [stats, setStats] = useState<Stats | null>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -90,7 +93,18 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
   const [timelineEras, setTimelineEras] = useState<TimelineEra[]>([]);
   const [cateringPackages, setCateringPackages] = useState<CateringPackage[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [cartPhotos, setCartPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const loadCartPhotos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/cart-photos?admin=1");
+      const data = await res.json();
+      setCartPhotos(data.photos || []);
+    } catch { setCartPhotos([]); }
+    finally { setLoading(false); }
+  }, []);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -213,7 +227,8 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
     if (tab === "timeline") loadTimeline();
     if (tab === "catering-packages") loadCateringPackages();
     if (tab === "locations") loadLocations();
-  }, [open, tab, loadStats, loadOrders, loadUsers, loadReviews, loadFranchise, loadCatering, loadMenuItems, loadTimeline, loadCateringPackages, loadLocations]);
+    if (tab === "cart-photos") loadCartPhotos();
+  }, [open, tab, loadStats, loadOrders, loadUsers, loadReviews, loadFranchise, loadCatering, loadMenuItems, loadTimeline, loadCateringPackages, loadLocations, loadCartPhotos]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     const progress =
@@ -303,6 +318,8 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
                 { id: "timeline", label: "Timeline", icon: Clock, adminOnly: true },
                 { id: "catering-packages", label: "Catering Pkg", icon: PartyPopper, adminOnly: true },
                 { id: "locations", label: "Locations", icon: MapPin, adminOnly: false },
+                { id: "cart-photos", label: "Cart Photos", icon: Camera, adminOnly: true },
+                { id: "site-content", label: "Site Content", icon: Settings, adminOnly: true },
               ].filter(t => !isOperator || !t.adminOnly).map((t) => {
                 const Icon = t.icon;
                 return (
@@ -348,8 +365,12 @@ export function AdminPanel({ open, onClose }: { open: boolean; onClose: () => vo
                 <TimelineView eras={timelineEras} />
               ) : tab === "catering-packages" ? (
                 <CateringPackagesView packages={cateringPackages} />
-              ) : (
+              ) : tab === "locations" ? (
                 <LocationsView locations={locations} />
+              ) : tab === "cart-photos" ? (
+                <CartPhotosView photos={cartPhotos} onRefresh={loadCartPhotos} />
+              ) : (
+                <SiteContentView />
               )}
             </div>
           </motion.aside>
@@ -680,6 +701,153 @@ function CateringView({ inquiries }: { inquiries: any[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function CartPhotosView({ photos, onRefresh }: { photos: any[]; onRefresh: () => void }) {
+  const [editing, setEditing] = useState<any | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", image: "", category: "cart", sortOrder: 0, active: true });
+
+  const save = async (photo: any) => {
+    if (photo.id) {
+      await fetch("/api/admin/cart-photos", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(photo) });
+    } else {
+      await fetch("/api/admin/cart-photos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(photo) });
+    }
+    setEditing(null); setAdding(false); onRefresh();
+  };
+  const remove = async (id: string) => { if (!confirm("Delete?")) return; await fetch(`/api/admin/cart-photos?id=${id}`, { method: "DELETE" }); onRefresh(); };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="font-display text-xl text-ohho-cream">Cart Photos</div>
+        <button onClick={() => { setAdding(true); setEditing({ title: "", description: "", image: "", category: "cart", sortOrder: 0, active: true }); }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 text-xs font-semibold hover:bg-ohho-orange/25"><Plus className="h-3.5 w-3.5" /> Add Photo</button>
+      </div>
+      {adding && editing && (
+        <div className="mb-4 p-4 rounded-xl glass-card space-y-2">
+          <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Title" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+          <input value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="Image URL" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+          <input value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} placeholder="Description (optional)" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+          <div className="flex gap-2">
+            <button onClick={() => save(editing)} className="flex-1 py-1.5 rounded bg-ohho-orange text-ohho-black text-xs font-bold">Save</button>
+            <button onClick={() => { setAdding(false); setEditing(null); }} className="flex-1 py-1.5 rounded border border-ohho-gold/20 text-ohho-cream text-xs">Cancel</button>
+          </div>
+        </div>
+      )}
+      {photos.length === 0 && !adding ? (
+        <div className="text-center py-12 text-ohho-cream-dim"><Camera className="h-10 w-10 mx-auto opacity-40 mb-3" />No cart photos yet.</div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {photos.map((p) => (
+            <div key={p.id} className="glass-card rounded-xl overflow-hidden">
+              <img src={p.image} alt={p.title} className="w-full h-32 object-cover" />
+              <div className="p-3">
+                <div className="text-sm font-semibold text-ohho-cream truncate">{p.title}</div>
+                <div className="mt-2 flex gap-1">
+                  <button onClick={() => setEditing(p)} className="flex-1 py-1 rounded text-[10px] bg-ohho-orange/15 text-ohho-orange">Edit</button>
+                  <button onClick={() => remove(p.id)} className="flex-1 py-1 rounded text-[10px] bg-ohho-red/15 text-ohho-red">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {editing && !adding && (
+        <div className="fixed inset-0 z-[90] bg-ohho-black/80 grid place-items-center p-4" onClick={() => setEditing(null)}>
+          <div className="glass-card rounded-xl p-4 max-w-sm w-full space-y-2" onClick={(e) => e.stopPropagation()}>
+            <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Title" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+            <input value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="Image URL" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+            <input value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} placeholder="Description" className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs" />
+            <div className="flex gap-2">
+              <button onClick={() => save(editing)} className="flex-1 py-1.5 rounded bg-ohho-orange text-ohho-black text-xs font-bold">Save</button>
+              <button onClick={() => setEditing(null)} className="flex-1 py-1.5 rounded border border-ohho-gold/20 text-ohho-cream text-xs">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SiteContentView() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState("all");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/site-content");
+      const data = await res.json();
+      setItems(data.items || []);
+      const editMap: Record<string, string> = {};
+      for (const i of data.items || []) editMap[i.key] = i.value;
+      setEditing(editMap);
+    } catch { setItems([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async (key: string) => {
+    const item = items.find(i => i.key === key);
+    await fetch("/api/site-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value: editing[key], type: item?.type, label: item?.label, page: item?.page, section: item?.section }),
+    });
+  };
+
+  const pages = ["all", "home", "company", "menu", "order", "franchise", "catering", "global"];
+  const filtered = filter === "all" ? items : items.filter(i => i.page === filter);
+
+  if (loading) return <div className="text-center py-20 text-ohho-cream-dim"><Loader2 className="h-8 w-8 mx-auto animate-spin" /></div>;
+
+  return (
+    <div>
+      <div className="font-display text-xl text-ohho-cream mb-2">Site Content (CMS)</div>
+      <p className="text-xs text-ohho-cream-dim mb-4">Edit any text on the website. Changes appear instantly after save.</p>
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {pages.map(p => (
+          <button key={p} onClick={() => setFilter(p)} className={cn("px-3 py-1.5 rounded-full text-xs font-semibold border", filter === p ? "bg-ohho-orange text-ohho-black border-ohho-orange" : "text-ohho-cream-dim border-ohho-gold/20")}>
+            {p === "all" ? "All Pages" : p.charAt(0).toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {filtered.map((item) => (
+          <div key={item.id} className="glass-card rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-xs font-semibold text-ohho-gold">{item.label}</div>
+              <div className="text-[9px] text-ohho-cream-dim">{item.page} · {item.section}</div>
+            </div>
+            {item.type === "textarea" ? (
+              <textarea
+                value={editing[item.key] ?? ""}
+                onChange={(e) => setEditing({ ...editing, [item.key]: e.target.value })}
+                rows={2}
+                className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs resize-none focus:outline-none focus:border-ohho-orange/50"
+              />
+            ) : (
+              <input
+                value={editing[item.key] ?? ""}
+                onChange={(e) => setEditing({ ...editing, [item.key]: e.target.value })}
+                className="w-full px-2 py-1.5 rounded bg-ohho-black/60 border border-ohho-gold/15 text-ohho-cream text-xs focus:outline-none focus:border-ohho-orange/50"
+              />
+            )}
+            <button
+              onClick={() => save(item.key)}
+              className="mt-1.5 px-3 py-1 rounded bg-ohho-orange/15 text-ohho-orange border border-ohho-orange/30 text-[10px] font-semibold hover:bg-ohho-orange/25"
+            >
+              Save
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

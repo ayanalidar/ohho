@@ -105,7 +105,6 @@ export default function Home() {
                   <LocationPicker />
                   <AchievementBadges />
                   <GenreTimeline />
-                  <VirtualTour3D />
                   <CustomerPhotoWall />
                   <LiveKitchenView />
                   <CountdownTimer />
@@ -134,7 +133,12 @@ export default function Home() {
                 </div>
               )}
 
-              {view === "franchise" && <FranchiseTab />}
+              {view === "franchise" && (
+                <>
+                  <FranchiseTab />
+                  <VirtualTour3D />
+                </>
+              )}
 
               {view === "catering" && <CateringTab />}
             </motion.div>
