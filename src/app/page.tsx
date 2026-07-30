@@ -14,7 +14,7 @@ import { Footer } from "@/components/ohho/Footer";
 import { StandalonePageBar } from "@/components/ohho/StandalonePageBar";
 import {
   TodaySpecialBanner, LiveOrderTicker, LocationPicker,
-  AchievementBadges, CustomerPhotoWall, CountdownTimer,
+  CustomerPhotoWall, CountdownTimer,
 } from "@/components/ohho/HomeFeatures";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -103,7 +103,6 @@ export default function Home() {
                   <HeroSpotlight />
                   <LiveOrderTicker />
                   <LocationPicker />
-                  <AchievementBadges />
                   <GenreTimeline />
                   <CustomerPhotoWall />
                   <LiveKitchenView />

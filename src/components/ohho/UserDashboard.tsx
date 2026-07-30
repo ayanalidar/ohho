@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Receipt, ShoppingBag, Coins, Clock, CheckCircle2, Bike, MapPin,
   Download, Loader2, Star, TrendingUp, Wallet, Plus, Trash2, Copy, Gift,
-  RefreshCw, Send, User,
+  RefreshCw, Send, User, Award,
 } from "lucide-react";
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { useCart } from "@/store/cart";
 import { menuItems } from "@/data/menu";
 import { useOrderSocket } from "@/hooks/use-order-socket";
+import { AchievementBadges } from "@/components/ohho/HomeFeatures";
 import { cn } from "@/lib/utils";
 
 type OrderItem = {
@@ -26,7 +27,7 @@ type Order = {
   items: OrderItem[];
 };
 
-type Tab = "orders" | "addresses" | "wallet" | "refer";
+type Tab = "orders" | "addresses" | "wallet" | "refer" | "achievements";
 
 const STATUS_META: Record<string, { label: string; color: string; icon: any }> = {
   PREPARING: { label: "Preparing", color: "#ff6a00", icon: Clock },
@@ -275,6 +276,7 @@ export function UserDashboard({ open, onClose }: { open: boolean; onClose: () =>
                   { id: "addresses", label: "Addresses", icon: MapPin },
                   { id: "wallet", label: "Wallet", icon: Wallet },
                   { id: "refer", label: "Refer & Earn", icon: Gift },
+                  { id: "achievements", label: "Badges", icon: Award },
                 ].map((t) => {
                   const Icon = t.icon;
                   return (
@@ -303,8 +305,10 @@ export function UserDashboard({ open, onClose }: { open: boolean; onClose: () =>
                   <AddressesTab addresses={addresses} onRefresh={load} />
                 ) : tab === "wallet" ? (
                   <WalletTab wallet={wallet} onReload={reloadWallet} />
-                ) : (
+                ) : tab === "refer" ? (
                   <ReferTab referral={referral} user={user} onCopy={copyReferralCode} />
+                ) : (
+                  <AchievementBadges />
                 )}
               </div>
             </motion.aside>

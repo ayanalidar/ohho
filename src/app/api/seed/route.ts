@@ -259,26 +259,74 @@ export async function GET() {
       path: "/",
     });
 
-    // 10. Seed site content (editable CMS)
+    // 10. Seed site content (editable CMS) — covers ALL text + images on every page
     const SITE_CONTENT_SEED: Array<{key: string, value: string, type: string, label: string, page: string, section: string}> = [
-      { key: "hero.eyebrow", value: "India's Fastest-Growing Premium QSR", type: "text", label: "Hero Eyebrow", page: "home", section: "hero" },
-      { key: "hero.brand", value: "OHHO", type: "text", label: "Hero Brand Name", page: "home", section: "hero" },
-      { key: "hero.brand2", value: "BURGERS", type: "text", label: "Hero Brand Name 2", page: "home", section: "hero" },
+      // Hero section
+      { key: "hero.eyebrow", value: "India's Fastest-Growing Premium QSR", type: "text", label: "Hero Eyebrow Text", page: "home", section: "hero" },
+      { key: "hero.brand", value: "OHHO", type: "text", label: "Hero Brand Word 1", page: "home", section: "hero" },
+      { key: "hero.brand2", value: "BURGERS", type: "text", label: "Hero Brand Word 2", page: "home", section: "hero" },
       { key: "hero.byline", value: "By OHHO Food Ventures", type: "text", label: "Hero Byline", page: "home", section: "hero" },
+      { key: "hero.tagline_prefix", value: "Live Premium.", type: "text", label: "Hero Tagline Bold Part", page: "home", section: "hero" },
       { key: "hero.tagline", value: "Chicken burgers, pizzas, sandwiches & shakes — built for India, engineered for fast returns, delivered to your door with live tracking.", type: "textarea", label: "Hero Tagline", page: "home", section: "hero" },
-      { key: "footer.made_by", value: "GuardianX", type: "text", label: "Made & Maintained By", page: "global", section: "footer" },
-      { key: "footer.copyright", value: "© 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.", type: "text", label: "Copyright Text", page: "global", section: "footer" },
-      { key: "footer.tagline", value: "Live Premium.", type: "text", label: "Footer Tagline", page: "global", section: "footer" },
-      { key: "company.title", value: "OHHO FOOD VENTURES", type: "text", label: "Company Title", page: "company", section: "hero" },
-      { key: "company.tagline", value: "Live Premium", type: "text", label: "Company Tagline", page: "company", section: "hero" },
-      { key: "menu.title", value: "The Menu, end to end.", type: "text", label: "Menu Title", page: "menu", section: "header" },
-      { key: "order.title", value: "Build your order, check out.", type: "text", label: "Order Title", page: "order", section: "header" },
-      { key: "franchise.title", value: "From cart to passive income.", type: "text", label: "Franchise Title", page: "franchise", section: "hero" },
-      { key: "catering.title", value: "OHHO for your event.", type: "text", label: "Catering Title", page: "catering", section: "hero" },
-      { key: "contact.email", value: "sales@ohhofoods.com", type: "text", label: "Contact Email", page: "global", section: "contact" },
-      { key: "contact.phone1", value: "+91 7006712347", type: "text", label: "Contact Phone 1", page: "global", section: "contact" },
-      { key: "contact.website", value: "www.ohhofoods.com", type: "text", label: "Website", page: "global", section: "contact" },
-      { key: "contact.instagram", value: "@ohhofoodventures", type: "text", label: "Instagram", page: "global", section: "contact" },
+      { key: "hero.cta1", value: "Order Now", type: "text", label: "Hero Button 1 Text", page: "home", section: "hero" },
+      { key: "hero.cta2", value: "Explore Menu", type: "text", label: "Hero Button 2 Text", page: "home", section: "hero" },
+      { key: "hero.cta3", value: "About the Company", type: "text", label: "Hero Button 3 Text", page: "home", section: "hero" },
+      { key: "hero.image1", value: "/ohho-images/ohho-special-chicken-burger.png", type: "image", label: "Hero Cross-fade Image 1", page: "home", section: "hero" },
+      { key: "hero.image2", value: "/ohho-images/ohho-special-chicken-pizza.png", type: "image", label: "Hero Cross-fade Image 2", page: "home", section: "hero" },
+      { key: "hero.image3", value: "/ohho-images/ohho-special-chicken-sandwich.png", type: "image", label: "Hero Cross-fade Image 3", page: "home", section: "hero" },
+      { key: "hero.image4", value: "/ohho-images/cold-coffee.png", type: "image", label: "Hero Cross-fade Image 4", page: "home", section: "hero" },
+      // Stats
+      { key: "stats.locations", value: "2", type: "text", label: "Stat: Locations Tested", page: "home", section: "stats" },
+      { key: "stats.locations_label", value: "Locations Tested", type: "text", label: "Stat: Locations Label", page: "home", section: "stats" },
+      { key: "stats.customers", value: "10000", type: "text", label: "Stat: Happy Customers", page: "home", section: "stats" },
+      { key: "stats.customers_suffix", value: "+", type: "text", label: "Stat: Customers Suffix", page: "home", section: "stats" },
+      { key: "stats.customers_label", value: "Happy Customers", type: "text", label: "Stat: Customers Label", page: "home", section: "stats" },
+      { key: "stats.retention", value: "80", type: "text", label: "Stat: Retention Rate", page: "home", section: "stats" },
+      { key: "stats.retention_suffix", value: "%", type: "text", label: "Stat: Retention Suffix", page: "home", section: "stats" },
+      { key: "stats.retention_label", value: "Retention Rate", type: "text", label: "Stat: Retention Label", page: "home", section: "stats" },
+      { key: "stats.setup", value: "45", type: "text", label: "Stat: Setup Time", page: "home", section: "stats" },
+      { key: "stats.setup_suffix", value: " days", type: "text", label: "Stat: Setup Suffix", page: "home", section: "stats" },
+      { key: "stats.setup_label", value: "Franchise Setup", type: "text", label: "Stat: Setup Label", page: "home", section: "stats" },
+      // Footer
+      { key: "footer.made_by", value: "GuardianX", type: "text", label: "Footer: Made & Maintained By", page: "global", section: "footer" },
+      { key: "footer.copyright", value: "© 2025 OHHO Food Ventures · OHHO Burgers · All rights reserved.", type: "text", label: "Footer: Copyright Text", page: "global", section: "footer" },
+      { key: "footer.tagline", value: "Live Premium.", type: "text", label: "Footer: Tagline", page: "global", section: "footer" },
+      { key: "footer.description", value: "A new-age premium QSR brand by OHHO Food Ventures. From Shamli & Kairana to Pan-India — burgers, pizzas, sandwiches & shakes, delivered fresh and tracked live.", type: "textarea", label: "Footer: Brand Description", page: "global", section: "footer" },
+      // Company page
+      { key: "company.title", value: "OHHO FOOD VENTURES", type: "text", label: "Company: Title", page: "company", section: "hero" },
+      { key: "company.tagline", value: "Live Premium", type: "text", label: "Company: Tagline", page: "company", section: "hero" },
+      { key: "company.story", value: "A new-age premium quick-service restaurant brand from Shamli & Kairana. We blend indulgence with quality, built for India's booming QSR sector.", type: "textarea", label: "Company: Story", page: "company", section: "hero" },
+      // Menu page
+      { key: "menu.title", value: "The Menu, end to end.", type: "text", label: "Menu: Title", page: "menu", section: "header" },
+      { key: "menu.subtitle", value: "Burgers, pizzas, sandwiches, buckets, sips & add-ons — every item, every price.", type: "textarea", label: "Menu: Subtitle", page: "menu", section: "header" },
+      // Order page
+      { key: "order.title", value: "Build your order, check out.", type: "text", label: "Order: Title", page: "order", section: "header" },
+      { key: "order.subtitle", value: "Pick a category, add to cart, customize with add-ons, choose delivery or pickup, pay your way.", type: "textarea", label: "Order: Subtitle", page: "order", section: "header" },
+      // Franchise page
+      { key: "franchise.title", value: "From cart to passive income.", type: "text", label: "Franchise: Title", page: "franchise", section: "hero" },
+      { key: "franchise.subtitle", value: "We don't hand over unproven locations. We scout, build, operate, and prove the model ourselves — then offer the winning territory to you.", type: "textarea", label: "Franchise: Subtitle", page: "franchise", section: "hero" },
+      { key: "franchise.cta", value: "Become a Franchisee →", type: "text", label: "Franchise: CTA Button", page: "franchise", section: "hero" },
+      // Catering page
+      { key: "catering.title", value: "OHHO for your event.", type: "text", label: "Catering: Title", page: "catering", section: "hero" },
+      { key: "catering.subtitle", value: "Office lunches, weddings, birthdays, corporate events — we cater them all. Premium burgers, pizzas, buckets & sips at scale. Min 24-hour notice.", type: "textarea", label: "Catering: Subtitle", page: "catering", section: "hero" },
+      // Contact
+      { key: "contact.email", value: "sales@ohhofoods.com", type: "text", label: "Contact: Email", page: "global", section: "contact" },
+      { key: "contact.phone1", value: "+91 7006712347", type: "text", label: "Contact: Phone 1", page: "global", section: "contact" },
+      { key: "contact.phone2", value: "+91 9650443642", type: "text", label: "Contact: Phone 2", page: "global", section: "contact" },
+      { key: "contact.phone3", value: "+91 9652852780", type: "text", label: "Contact: Phone 3", page: "global", section: "contact" },
+      { key: "contact.website", value: "www.ohhofoods.com", type: "text", label: "Contact: Website", page: "global", section: "contact" },
+      { key: "contact.instagram", value: "@ohhofoodventures", type: "text", label: "Contact: Instagram", page: "global", section: "contact" },
+      { key: "contact.origin", value: "Shamli & Kairana, Uttar Pradesh, India", type: "text", label: "Contact: Origin Location", page: "global", section: "contact" },
+      // Today's special
+      { key: "special.badge", value: "🔥 Today's Special", type: "text", label: "Special: Badge Text", page: "home", section: "special" },
+      // Rewards
+      { key: "rewards.title", value: "Eat. Earn. Climb tiers.", type: "text", label: "Rewards: Title", page: "home", section: "rewards" },
+      { key: "rewards.subtitle", value: "Every ₹10 you spend earns 1 OHHO point. Climb through four tiers — Bronze to OHHO Black — and unlock real, repeat-customer perks.", type: "textarea", label: "Rewards: Subtitle", page: "home", section: "rewards" },
+      // Live kitchen
+      { key: "kitchen.title", value: "From grill to your door.", type: "text", label: "Kitchen: Title", page: "home", section: "kitchen" },
+      { key: "kitchen.subtitle", value: "Watch every active OHHO order move through the pipeline in real time.", type: "textarea", label: "Kitchen: Subtitle", page: "home", section: "kitchen" },
+      // Logo
+      { key: "logo.url", value: "/ohho-images/ohho-logo-full.png", type: "image", label: "Logo: Full Logo URL", page: "global", section: "logo" },
     ];
     for (const c of SITE_CONTENT_SEED) {
       await db.siteContent.upsert({ where: { key: c.key }, create: c, update: {} });

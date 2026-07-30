@@ -263,13 +263,13 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
               {/* Left: menu */}
               <div className="lg:col-span-8">
                 {/* Category tabs */}
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
                   {categories.filter(c => c.id !== "Add-ons").map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setCat(c.id)}
                       className={cn(
-                        "inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition-all",
+                        "inline-flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 px-2.5 sm:px-4 rounded-full text-xs sm:text-sm font-semibold border transition-all",
                         cat === c.id
                           ? "bg-ohho-orange text-ohho-black border-ohho-orange shadow-lg shadow-ohho-orange/30"
                           : "bg-ohho-black/40 text-ohho-cream-dim border-ohho-gold/20 hover:border-ohho-gold/60 hover:text-ohho-gold"
@@ -282,19 +282,20 @@ export function OrderingPlatform({ onRequireAuth }: { onRequireAuth: () => void 
                 </div>
 
                 {/* Items */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {items.map((item) => {
                     const inCart = lines.find((l) => l.item.id === item.id);
                     const itemAddOns = selectedAddOns[item.id] || [];
                     return (
                       <div
                         key={item.id}
-                        className="glass-card glass-card-hover rounded-xl p-4 flex gap-4"
+                        className="glass-card glass-card-hover rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4"
                       >
-                        <div className="h-24 w-24 rounded-lg overflow-hidden flex-shrink-0 bg-ohho-black">
+                        <div className="w-full sm:w-24 h-32 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-ohho-black">
                           <img
                             src={item.image}
                             alt={item.name}
+                            loading="lazy"
                             className="h-full w-full object-cover"
                           />
                         </div>
