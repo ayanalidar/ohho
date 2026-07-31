@@ -6,7 +6,7 @@ import { ChevronDown, Flame, MapPin, Star, Truck } from "lucide-react";
 import { ohhoStats } from "@/data/menu";
 import { useNav } from "@/components/ohho/nav-context";
 import { AnimatedCounter } from "@/components/ohho/HomeFeatures";
-import { useSiteContent } from "@/hooks/use-site-content";
+import { useInitData } from "@/hooks/use-init-data";
 
 // Hero images cycle — AI-generated premium OHHO food photography
 const HERO_IMAGES = [
@@ -20,7 +20,9 @@ const HERO_INTERVAL_MS = 4200;
 
 export function HeroSpotlight() {
   const { navigate } = useNav();
-  const { get } = useSiteContent();
+  const { data } = useInitData();
+  const content = data?.siteContent || {};
+  const get = (key: string, fallback: string): string => content[key] ?? fallback;
   const [idx, setIdx] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);

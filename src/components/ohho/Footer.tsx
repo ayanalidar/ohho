@@ -3,11 +3,13 @@
 import { Phone, Mail, Globe, Instagram, MapPin, Flame } from "lucide-react";
 import { contactInfo, testedLocations } from "@/data/menu";
 import { useNav } from "@/components/ohho/nav-context";
-import { useSiteContent } from "@/hooks/use-site-content";
+import { useInitData } from "@/hooks/use-init-data";
 
 export function Footer() {
   const { navigate } = useNav();
-  const { get } = useSiteContent();
+  const { data } = useInitData();
+  const content = data?.siteContent || {};
+  const get = (key: string, fallback: string): string => content[key] ?? fallback;
   return (
     <footer className="relative bg-ohho-black-light border-t border-ohho-gold/15 pt-16 pb-8 grain">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">

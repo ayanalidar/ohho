@@ -48,7 +48,7 @@ export function LiveKitchenView() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 15000); // poll every 15s as fallback
+    const t = setInterval(load, 30000); // poll every 30s as fallback (was 15s)
     return () => clearInterval(t);
   }, []);
 

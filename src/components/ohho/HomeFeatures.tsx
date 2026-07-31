@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/ohho/AuthProvider";
 import { useNav } from "@/components/ohho/nav-context";
+import { useInitData } from "@/hooks/use-init-data";
 import { cn } from "@/lib/utils";
 
 // ─── 1. Animated Counter ──────────────────────────────
@@ -43,20 +44,25 @@ export function AnimatedCounter({
 
 // ─── 2. Live Order Ticker ─────────────────────────────
 export function LiveOrderTicker() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const { data } = useInitData();
+  const orders = data?.recentOrders || [];
 
+  // Refresh every 60s (was 20s — too frequent for serverless)
+  const [refreshed, setRefreshed] = useState<any[]>([]);
   useEffect(() => {
-    fetch("/api/recent-orders").then(r => r.json()).then(d => setOrders(d.orders || [])).catch(() => {});
+    if (!data) return;
+    // Use initial data from batched fetch
     const t = setInterval(() => {
-      fetch("/api/recent-orders").then(r => r.json()).then(d => setOrders(d.orders || [])).catch(() => {});
-    }, 20000);
+      fetch("/api/recent-orders").then(r => r.json()).then(d => setRefreshed(d.orders || [])).catch(() => {});
+    }, 60000);
     return () => clearInterval(t);
-  }, []);
+  }, [data]);
 
-  if (orders.length === 0) return null;
+  // Use refreshed data if available, otherwise initial batched data
+  const displayOrders = refreshed.length > 0 ? refreshed : orders;
 
-  // Duplicate for seamless marquee
-  const items = [...orders, ...orders];
+  if (displayOrders.length === 0) return null;
+  const items = [...displayOrders, ...displayOrders];
 
   return (
     <div className="relative overflow-hidden bg-ohho-black-light border-y border-ohho-gold/10 py-2.5">
@@ -79,12 +85,9 @@ export function LiveOrderTicker() {
 
 // ─── 3. Today's Special Banner ────────────────────────
 export function TodaySpecialBanner() {
-  const [special, setSpecial] = useState<any>(null);
+  const { data } = useInitData();
+  const special = data?.todaySpecial;
   const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/today-special").then(r => r.json()).then(d => setSpecial(d.special)).catch(() => {});
-  }, []);
 
   if (!special || dismissed) return null;
 
@@ -196,13 +199,10 @@ export function CustomerPhotoWall() {
 // ─── 5. Location Picker ───────────────────────────────
 export function LocationPicker() {
   const { navigate } = useNav();
-  const [locations, setLocations] = useState<any[]>([]);
+  const { data } = useInitData();
+  const locations = data?.locations || [];
   const [pincode, setPincode] = useState("");
   const [result, setResult] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/locations").then(r => r.json()).then(d => setLocations(d.locations || [])).catch(() => {});
-  }, []);
 
   const checkPincode = () => {
     if (!pincode.trim()) return;
@@ -347,13 +347,10 @@ export function AchievementBadges() {
 
 // ─── 7. Countdown Timer ───────────────────────────────
 export function CountdownTimer() {
-  const [locations, setLocations] = useState<any[]>([]);
+  const { data } = useInitData();
+  const locations = data?.locations || [];
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const targetRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/locations").then(r => r.json()).then(d => setLocations(d.locations || [])).catch(() => {});
-  }, []);
 
   const upcoming = locations.filter((l: any) => l.status === "coming-soon" && l.opensOn);
 
