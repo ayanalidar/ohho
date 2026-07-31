@@ -1,60 +1,60 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { PrismaClient } from '@prisma/client';
 
 // GET /api/init — returns ALL data needed for initial page render in ONE request
-// This replaces 6-8 separate API calls with a single batched call, dramatically
-// reducing DB connections and page load time on Vercel serverless.
+// Uses a dedicated PrismaClient with session pooler (port 5432) for faster queries.
+// The session pooler doesn't have pgbouncer overhead but limits connections.
+// Since this is one function = one connection, it's safe.
 export async function GET() {
-  try {
-    const [
-      menuItems,
-      timelineEras,
-      locations,
-      cateringPackages,
-      todaySpecial,
-      siteContent,
-      recentOrders,
-    ] = await Promise.all([
-      db.menuItem.findMany({
-        where: { available: true },
-        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-        select: {
-          id: true, slug: true, name: true, emoji: true, description: true,
-          ingredients: true, image: true, category: true, price: true,
-          kcal: true, prepTime: true, spice: true, tag: true,
-          isAddOn: true, signature: true, available: true, sortOrder: true,
-        },
-      }),
-      db.timelineEra.findMany({ orderBy: { sortOrder: "asc" } }),
-      db.location.findMany({
-        where: { active: true },
-        orderBy: { createdAt: "asc" },
-      }),
-      db.cateringPackage.findMany({
-        where: { available: true },
-        orderBy: { sortOrder: "asc" },
-      }),
-      db.todaySpecial.findFirst({
-        where: { active: true },
-        orderBy: { updatedAt: "desc" },
-      }),
-      db.siteContent.findMany(),
-      db.order.findMany({
-        where: { status: { notIn: ["CANCELLED"] } },
-        include: {
-          items: { select: { name: true, emoji: true, qty: true } },
-          user: { select: { name: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-    ]);
+  // Create a one-off client using the session pooler URL (no pgbouncer)
+  // This is faster than the transaction pooler for multiple sequential queries
+  const baseUrl = process.env.DATABASE_URL || '';
+  // Strip pgbouncer params and use port 5432 (session mode)
+  const sessionUrl = baseUrl
+    .replace(':6543', ':5432')
+    .replace(/[\?&]pgbouncer=true/, '')
+    .replace(/[\?&]connection_limit=\d+/, '')
+    .replace(/[\?&]pool_timeout=\d+/, '')
+    .replace(/&&/g, '&')
+    .replace(/\?&/, '?')
+    .replace(/&$/, '');
 
-    // Build site content map
+  let client: PrismaClient;
+  try {
+    client = new PrismaClient({
+      log: ['error'],
+      datasources: { db: { url: sessionUrl } },
+    });
+  } catch {
+    // Fallback to default client
+    const { db } = await import('@/lib/db');
+    client = db as any;
+  }
+
+  try {
+    // Run queries sequentially (faster with session pooler than Promise.all)
+    const menuItems = await client.menuItem.findMany({
+      where: { available: true },
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    });
+    const timelineEras = await client.timelineEra.findMany({ orderBy: { sortOrder: "asc" } });
+    const locations = await client.location.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
+    const cateringPackages = await client.cateringPackage.findMany({ where: { available: true }, orderBy: { sortOrder: "asc" } });
+    const todaySpecial = await client.todaySpecial.findFirst({ where: { active: true }, orderBy: { updatedAt: "desc" } });
+    const siteContent = await client.siteContent.findMany();
+    const recentOrders = await client.order.findMany({
+      where: { status: { notIn: ["CANCELLED"] } },
+      include: {
+        items: { select: { name: true, emoji: true, qty: true } },
+        user: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
     const contentMap: Record<string, string> = {};
     for (const c of siteContent) contentMap[c.key] = c.value;
 
-    // Format recent orders
     const recent = recentOrders.map((o) => ({
       orderId: o.orderId,
       firstName: (o.user?.name || "Customer").split(" ")[0],
@@ -75,7 +75,12 @@ export async function GET() {
       recentOrders: recent,
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message, stack: e?.stack?.slice(0, 200) }, { status: 500 });
+    return NextResponse.json({ error: e?.message }, { status: 500 });
+  } finally {
+    // Disconnect the one-off client
+    if (client) {
+      try { await client.$disconnect(); } catch {}
+    }
   }
 }
 
