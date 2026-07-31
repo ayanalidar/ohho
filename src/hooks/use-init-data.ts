@@ -7,7 +7,7 @@ let initCache: any = null;
 let initPromise: Promise<any> | null = null;
 
 export function useInitData() {
-  const [data, setData] = useState<any>(initCache);
+  const [data, setData] = useState<any>(initCache || {});
 
   useEffect(() => {
     if (initCache) return;
@@ -23,18 +23,10 @@ export function useInitData() {
     initPromise.then(d => setData(d));
   }, []);
 
-  return data;
+  return { data };
 }
 
 export function refreshInitCache() {
   initCache = null;
   initPromise = null;
-}
-
-// Site content helper using cached init data
-export function useContent() {
-  const data = useInitData();
-  const content = data?.siteContent || {};
-  const get = (key: string, fallback: string): string => content[key] ?? fallback;
-  return { content, get, data };
 }
